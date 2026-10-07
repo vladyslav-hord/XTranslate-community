@@ -429,7 +429,6 @@ export interface ITranslationResult {
 
   // should be provided from api response in `translate(params)`
   translation: string
-  detectedLang?: string
   langDetected?: string
   transcription?: string | null
   spellCorrection?: string | null

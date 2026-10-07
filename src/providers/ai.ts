@@ -30,6 +30,24 @@ const modelIdsByProvider: Partial<Record<ProviderCodeName, readonly string[]>> =
   [ProviderCodeName.DEEPSEEK]: Object.values(DeepSeekAIModel),
 };
 
+const reasoningEffortByProviderAndModel: Partial<Record<ProviderCodeName, Readonly<Record<string, "none" | "low">>>> = {
+  [ProviderCodeName.OPENAI]: {
+    [OpenAIModel.COST_EFFECTIVE]: "none",
+    [OpenAIModel.RECOMMENDED]: "low",
+  },
+  [ProviderCodeName.GEMINI]: {
+    [GeminiAIModel.COST_EFFECTIVE]: "low",
+    [GeminiAIModel.RECOMMENDED]: "low",
+  },
+  [ProviderCodeName.GROK]: {
+    [GrokAIModel.RECOMMENDED]: "low",
+  },
+  [ProviderCodeName.DEEPSEEK]: {
+    [DeepSeekAIModel.COST_EFFECTIVE]: "none",
+    [DeepSeekAIModel.RECOMMENDED]: "none",
+  },
+};
+
 const logger = createLogger({ systemPrefix: "[AI TRANSLATOR]" });
 
 function makeTranslationError(statusCode: number, message: string): ITranslationError {
@@ -126,6 +144,9 @@ export async function translateWithAI({
       },
       body: JSON.stringify({
         model,
+        ...(reasoningEffortByProviderAndModel[provider]?.[model]
+          ? { reasoning_effort: reasoningEffortByProviderAndModel[provider][model] }
+          : {}),
         messages: [
           { role: "system", content: buildSystemPrompt(sourceLanguage, targetLanguage) },
           { role: "user", content: text },
@@ -150,7 +171,6 @@ export async function translateWithAI({
     const parsedTranslation = parseTranslation(content);
     return {
       ...parsedTranslation,
-      detectedLang: parsedTranslation.langDetected,
       transcription: null,
       spellCorrection: null,
     };

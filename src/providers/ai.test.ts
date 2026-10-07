@@ -1,5 +1,5 @@
 import { proxyRequest } from "../background/httpProxy.bgc";
-import { ProviderCodeName } from "./providers";
+import { DeepSeekAIModel, GeminiAIModel, GrokAIModel, OpenAIModel, ProviderCodeName } from "./providers";
 import { translateWithAI } from "./ai";
 
 jest.mock("../background/httpProxy.bgc", () => ({
@@ -36,7 +36,6 @@ describe("translateWithAI", () => {
 
     await expect(translateWithAI(params)).resolves.toEqual({
       translation: "Pierwsza linia\nDruga linia",
-      detectedLang: "en",
       langDetected: "en",
       transcription: null,
       spellCorrection: null,
@@ -55,6 +54,30 @@ describe("translateWithAI", () => {
     });
     expect(body.messages[1]).toEqual({ role: "user", content: params.text });
     expect(body.messages[0].content).toContain("automatically");
+  });
+
+  it.each([
+    [ProviderCodeName.OPENAI, OpenAIModel.COST_EFFECTIVE, "none"],
+    [ProviderCodeName.OPENAI, OpenAIModel.RECOMMENDED, "low"],
+    [ProviderCodeName.GEMINI, GeminiAIModel.COST_EFFECTIVE, "low"],
+    [ProviderCodeName.GEMINI, GeminiAIModel.RECOMMENDED, "low"],
+    [ProviderCodeName.GROK, GrokAIModel.COST_EFFECTIVE, undefined],
+    [ProviderCodeName.GROK, GrokAIModel.RECOMMENDED, "low"],
+    [ProviderCodeName.DEEPSEEK, DeepSeekAIModel.COST_EFFECTIVE, "none"],
+    [ProviderCodeName.DEEPSEEK, DeepSeekAIModel.RECOMMENDED, "none"],
+  ])("sets translation reasoning policy for %s/%s", async (provider, model, expectedEffort) => {
+    mockedProxyRequest.mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify({ translation: "ok" }) } }],
+    });
+
+    await translateWithAI({ ...params, provider: provider as ProviderCodeName, model: model as string });
+
+    const body = JSON.parse(mockedProxyRequest.mock.calls[0][0].requestInit.body);
+    if (expectedEffort === undefined) {
+      expect(body).not.toHaveProperty("reasoning_effort");
+    } else {
+      expect(body.reasoning_effort).toBe(expectedEffort);
+    }
   });
 
   it("fails on malformed model output instead of returning the original text", async () => {
