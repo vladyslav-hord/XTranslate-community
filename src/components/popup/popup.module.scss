@@ -80,58 +80,6 @@
       border: 1px solid;
     }
 
-    .freeTrialDemo {
-      position: relative;
-      display: flex;
-      gap: var(--theme-spacing);
-      align-items: center;
-      justify-content: center;
-      font-size: small;
-      white-space: pre-line;
-      cursor: pointer;
-      background: #00000066;
-      padding: .5em;
-      border-radius: 5px;
-
-      > div {
-        flex: 1;
-      }
-
-      a {
-        font-weight: bold;
-      }
-
-      input[type="checkbox"] {
-        appearance: none;
-        margin: 0;
-
-        &:checked ~ .aiFeatureDetails {
-          display: block;
-        }
-      }
-
-      .aiFeatureDetails {
-        display: none;
-      }
-    }
-
-    .freeTrialExhausted {
-      display: flex;
-      flex-direction: column;
-      gap: .5lh;
-
-      .closeIcon {
-        position: absolute;
-        right: 3px;
-        top: 3px;
-        opacity: .5;
-        color: inherit;
-
-        &:hover {
-          opacity: 1;
-        }
-      }
-    }
 
     .translation {
       display: flex;

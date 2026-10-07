@@ -110,7 +110,6 @@ export class ContentScript extends React.Component {
   @observable isRtlSelection = false;
   @observable isIconVisible = false;
   @observable isLoading = false;
-  @observable isFreeTrialUsed = false;
 
   async componentDidMount() {
     this.bindEvents();
@@ -411,7 +410,6 @@ export class ContentScript extends React.Component {
     this.error = null;
     this.isLoading = false;
     this.summarized = "";
-    this.isFreeTrialUsed = false;
   }
 
   static isEditableElement(elem: Element) {
@@ -759,14 +757,6 @@ export class ContentScript extends React.Component {
     }
   }
 
-  @action
-  async translateWithFreeTrial() {
-    this.lastParams.provider = ProviderCodeName.XTRANSLATE_PRO;
-    const payload = this.getPayloadParams(this.lastParams);
-    await this.translate(payload, () => getXTranslatePro().translateTrial(payload));
-    this.isFreeTrialUsed = true;
-  }
-
   render() {
     const { translation, error, popupPosition, speak, summarized, summarize, isPopupHidden } = this;
 
@@ -785,8 +775,6 @@ export class ContentScript extends React.Component {
           summarize={summarize}
           summarized={summarized}
           showPromoBanner={!isPopupHidden}
-          aiDemoTranslation={this.isFreeTrialUsed}
-          aiDemoTranslationRequest={() => this.translateWithFreeTrial()}
           ref={(ref: Popup) => {
             this.popup = ref
           }}

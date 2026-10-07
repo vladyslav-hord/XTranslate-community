@@ -7,6 +7,7 @@ export const isDevelopment = process.env.NODE_ENV === "development";
 export const websiteURL = 'https://www.xtranslate.dev';
 export const supportEmail = "team@xtranslate.dev"
 export const chromeStoreURL = 'https://chrome.google.com/webstore/detail/gfgpkepllngchpmcippidfhmbhlljhoo';
+export const communityRepoURL = "https://github.com/vladyslav-hord/XTranslate-community";
 
 // Webpack: app build, generated output filenames without extension (*.js, *.css)
 export const appEntry = "app";

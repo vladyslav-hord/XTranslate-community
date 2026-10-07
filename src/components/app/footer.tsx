@@ -1,7 +1,7 @@
 import "./footer.scss"
 import React from "react";
 import { observer } from "mobx-react";
-import { getExtensionUrl } from "@/config";
+import { communityRepoURL } from "@/config";
 import { getManifest } from '@/extension'
 import { getMessage } from "@/i18n";
 import { CopyToClipboardIcon } from "../copy-to-clipboard-icon";
@@ -23,7 +23,7 @@ export class Footer extends React.Component {
       "",
       `${this.shareTags.map(tag => `#` + tag).join(' ')}`,
       "",
-      getExtensionUrl(),
+      communityRepoURL,
     ].join("\n");
   }
 

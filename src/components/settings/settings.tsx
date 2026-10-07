@@ -29,7 +29,7 @@ import { FullPageContextMenuMode, pageTranslationStorage } from "@/user-script/p
 import { Button } from "../button";
 import { ProviderAuthSettings } from "./provider_auth_settings";
 import { SelectAIModel } from "./select_ai_model";
-import { getConfiguredAdvancedProviders, isAIProvider } from "./advancedProviders";
+import { getAdvancedProviders, getRegularProviders, isAIProvider } from "./advancedProviders";
 
 @observer
 export class Settings extends React.Component {
@@ -293,9 +293,9 @@ export class Settings extends React.Component {
   renderPopupTranslationSettings() {
     const settings = settingsStore.data;
     const allProviders = getTranslators();
-    const providers = allProviders.filter(provider => !isAIProvider(provider) && provider.isAvailable());
+    const providers = getRegularProviders(allProviders);
     const advancedProviders = settings.showAdvancedProviders
-      ? getConfiguredAdvancedProviders(allProviders)
+      ? getAdvancedProviders(allProviders)
       : [];
     return (
       <>
