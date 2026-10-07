@@ -21,6 +21,7 @@ import { CopyToClipboardIcon } from "../copy-to-clipboard-icon";
 import { PopupPromoBanner } from "@/components/popup/popup_promo";
 import { Tooltip } from "@/components/tooltip";
 import { Button } from "@/components/button";
+import { getLanguageName } from "../../utils/languageName";
 
 export interface PopupProps extends React.HTMLProps<any> {
   previewMode?: boolean;
@@ -308,6 +309,7 @@ export class Popup extends React.Component<PopupProps> {
     if (!this.translation) return;
     let { translation, transcription, dictionary = [], vendor, langFrom, langTo, langDetected } = this.translation;
     if (langDetected) langFrom = langDetected;
+    const translatedFromLanguage = getLanguageName(langFrom, getAllLanguages());
 
     const translator = getTranslator(vendor);
     const directionResults = isRTL(langTo) ? "rtl" : "ltr";
@@ -353,10 +355,10 @@ export class Popup extends React.Component<PopupProps> {
         )}
         {this.renderFreeTrialActionsOrUpgradeToProSuggestion()}
         {
-          this.settings.showTranslatedFrom && (
+          this.settings.showTranslatedFrom && translatedFromLanguage && (
             <div className={styles.translatedFrom}>
               {getMessage("translated_from", {
-                lang: getAllLanguages()[langFrom as LangTo]
+                lang: translatedFromLanguage
               })}
               {` (${translator.title})`}
             </div>

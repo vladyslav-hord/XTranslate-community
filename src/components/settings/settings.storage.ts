@@ -2,6 +2,7 @@ import { action, IObservableArray, makeObservable } from "mobx";
 import { Hotkey } from "@/utils/parseHotkey";
 import { createStorage } from "@/storage";
 import { getTranslator, ProviderCodeName } from "@/providers";
+import { DEFAULT_AI_MODEL_SETTINGS } from "@/providers/providers";
 
 export type PopupPosition = "" /*auto*/ | "left top" | "left bottom" | "right top" | "right bottom";
 export type DisplayMode = "day" | "night" | "auto";
@@ -44,6 +45,8 @@ export const settingsStorage = createStorage("settings", {
     showProviderSelectIcon: true,
     showCopyTranslationIcon: true,
     displayMode: "auto" as DisplayMode,
+    showAdvancedProviders: false,
+    ...DEFAULT_AI_MODEL_SETTINGS,
     showIconNearSelection: true,
     showPopupAfterSelection: false,
     showPopupOnClickBySelection: false,

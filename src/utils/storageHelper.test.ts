@@ -1,5 +1,5 @@
 import { reaction } from "mobx";
-import { StorageAdapter, StorageHelper } from "./storageHelper";
+import { StorageAdapter, StorageHelper, redactStorageLogValue } from "./storageHelper";
 
 describe("renderer/utils/StorageHelper", () => {
   describe("Using custom StorageAdapter", () => {
@@ -253,4 +253,19 @@ describe("renderer/utils/StorageHelper", () => {
     expect(storageHelper.get().message).toBe("saved-before");
   });
 
+  describe("sensitive storage logging", () => {
+    it.each([
+      "openai_api_key",
+      "gemini_api_key",
+      "grok_x_api_key",
+      "deepseek_api_key",
+      "deepl_api_auth_key",
+    ])("redacts values for %s", key => {
+      expect(redactStorageLogValue(key, "example-secret-key")).toBe("[REDACTED]");
+    });
+
+    it("leaves ordinary preferences unchanged", () => {
+      expect(redactStorageLogValue("settings", { vendor: "google" })).toEqual({ vendor: "google" });
+    });
+  });
 });

@@ -36,6 +36,18 @@
     font-size: small;
   }
 
+  .aiProviderSettings {
+    width: 100%;
+
+    .aiProviderConfig {
+      display: flex;
+      flex-direction: column;
+      gap: var(--theme-spacing-half);
+      padding: var(--theme-spacing) 0;
+      border-top: 1px solid var(--theme-border-color);
+    }
+  }
+
   .provider {
     --flexGap: var(--theme-spacing-half);
     position: relative;

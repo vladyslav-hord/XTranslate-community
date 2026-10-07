@@ -467,6 +467,12 @@
   "ai_choose_model": {
     "message": "Choose AI model"
   },
+  "settings_advanced_providers": {
+    "message": "Show advanced providers"
+  },
+  "settings_configure_ai_providers": {
+    "message": "Configure AI providers"
+  },
   "ai_choose_model_cost_effective": {
     "message": "Most cost-efficient"
   },

@@ -9,6 +9,12 @@ import isEqual from "lodash/isEqual";
 import isEmpty from "lodash/isEmpty";
 import merge from "lodash/merge";
 
+export function redactStorageLogValue<T>(key: string, value: T): T | "[REDACTED]" {
+  return /(?:^|_)(?:api(?:_auth)?_key|access_token|secret|token)(?:$|_)/i.test(key)
+    ? "[REDACTED]"
+    : value;
+}
+
 export interface StorageHelperOptions<T> {
   defaultValue?: T;
   autoLoad?: boolean; // preload data from persistent storage when `opts.storageProvider` (default: true)
@@ -138,7 +144,7 @@ export class StorageHelper<T> {
   protected async saveToExternalStorage(state: T) {
     try {
       this.logger.info(`saving state to external storage"`, {
-        state,
+        state: redactStorageLogValue(this.key, state),
         key: this.key,
         origin: StorageHelper.getResourceOrigin(),
       });
@@ -154,7 +160,7 @@ export class StorageHelper<T> {
   @action.bound
   protected onData(data: T) {
     this.logger.info("data fetched", {
-      data,
+      data: redactStorageLogValue(this.key, data),
       origin: StorageHelper.getResourceOrigin(),
     });
 

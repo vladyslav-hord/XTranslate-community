@@ -429,9 +429,10 @@ export interface ITranslationResult {
 
   // should be provided from api response in `translate(params)`
   translation: string
+  detectedLang?: string
   langDetected?: string
-  transcription?: string
-  spellCorrection?: string
+  transcription?: string | null
+  spellCorrection?: string | null
   dictionary?: ITranslationDictionary[];
   sourceLanguages?: string[]; // all detected languages when "auto-detect" is used
 }

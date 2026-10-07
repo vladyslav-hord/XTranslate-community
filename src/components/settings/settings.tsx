@@ -4,7 +4,7 @@ import { action, makeObservable, observable } from "mobx";
 import { observer } from "mobx-react";
 import isEqual from "lodash/isEqual";
 import startCase from "lodash/startCase";
-import { deeplApiAuthKey, getTranslator, getTranslators, googleApiDomain, googleApiDomains, ProviderCodeName, sanitizeDeeplApiKey, Translator, XTranslateProTTSVoice } from "@/providers";
+import { deeplApiAuthKey, getTranslator, getTranslators, googleApiDomain, googleApiDomains, ProviderCodeName, sanitizeDeeplApiKey, Translator, XTranslateProTTSVoice, OpenAIModel, GeminiAIModel, GrokAIModel, DeepSeekAIModel, openAiApiKey, geminiApiKey, grokApiKey, deepSeekApiKey } from "@/providers";
 import { XTranslateIcon } from "@/user-script/xtranslate-icon";
 import { SelectLanguage, SelectLanguageChangeEvent } from "../select-language";
 import { Checkbox } from "../checkbox";
@@ -27,6 +27,9 @@ import { getHotkey, parseHotkey, prevDefault } from "@/utils";
 import { Input } from "@/components/input";
 import { FullPageContextMenuMode, pageTranslationStorage } from "@/user-script/page-translator";
 import { Button } from "../button";
+import { ProviderAuthSettings } from "./provider_auth_settings";
+import { SelectAIModel } from "./select_ai_model";
+import { getConfiguredAdvancedProviders, isAIProvider } from "./advancedProviders";
 
 @observer
 export class Settings extends React.Component {
@@ -47,6 +50,7 @@ export class Settings extends React.Component {
     [ProviderCodeName.XTRANSLATE_PRO]: "Hello world",
   };
   @observable isSpeaking = false;
+  @observable aiProviderSettingsVisible = false;
 
   get providerSettings(): Partial<Record<ProviderCodeName, React.ReactNode>> {
     const deeplApiKey = deeplApiAuthKey.get();
@@ -74,6 +78,58 @@ export class Settings extends React.Component {
             <Button outline label="Set API key" onClick={this.setupDeeplApiKey}/>
           )}
         </div>
+      ),
+      [ProviderCodeName.OPENAI]: (
+        <ProviderAuthSettings
+          provider="OpenAI"
+          apiKey={openAiApiKey}
+          onApiKeyRemoved={() => this.onAIProviderKeyRemoved(ProviderCodeName.OPENAI)}
+          modelSelector={<SelectAIModel
+            value={settingsStore.data.openAiModel}
+            costEffectiveModel={OpenAIModel.COST_EFFECTIVE}
+            recommendedModel={OpenAIModel.RECOMMENDED}
+            onChange={model => settingsStore.data.openAiModel = model as OpenAIModel}
+          />}
+        />
+      ),
+      [ProviderCodeName.GEMINI]: (
+        <ProviderAuthSettings
+          provider="Gemini"
+          apiKey={geminiApiKey}
+          onApiKeyRemoved={() => this.onAIProviderKeyRemoved(ProviderCodeName.GEMINI)}
+          modelSelector={<SelectAIModel
+            value={settingsStore.data.geminiModel}
+            costEffectiveModel={GeminiAIModel.COST_EFFECTIVE}
+            recommendedModel={GeminiAIModel.RECOMMENDED}
+            onChange={model => settingsStore.data.geminiModel = model as GeminiAIModel}
+          />}
+        />
+      ),
+      [ProviderCodeName.GROK]: (
+        <ProviderAuthSettings
+          provider="Grok"
+          apiKey={grokApiKey}
+          onApiKeyRemoved={() => this.onAIProviderKeyRemoved(ProviderCodeName.GROK)}
+          modelSelector={<SelectAIModel
+            value={settingsStore.data.grokAiModel}
+            costEffectiveModel={GrokAIModel.COST_EFFECTIVE}
+            recommendedModel={GrokAIModel.RECOMMENDED}
+            onChange={model => settingsStore.data.grokAiModel = model as GrokAIModel}
+          />}
+        />
+      ),
+      [ProviderCodeName.DEEPSEEK]: (
+        <ProviderAuthSettings
+          provider="DeepSeek"
+          apiKey={deepSeekApiKey}
+          onApiKeyRemoved={() => this.onAIProviderKeyRemoved(ProviderCodeName.DEEPSEEK)}
+          modelSelector={<SelectAIModel
+            value={settingsStore.data.deepSeekModel}
+            costEffectiveModel={DeepSeekAIModel.COST_EFFECTIVE}
+            recommendedModel={DeepSeekAIModel.RECOMMENDED}
+            onChange={model => settingsStore.data.deepSeekModel = model as DeepSeekAIModel}
+          />}
+        />
       ),
       xtranslate_pro: (
         <XTranslateProSettingsWidget
@@ -148,25 +204,31 @@ export class Settings extends React.Component {
   renderProviderSettings({ name: provider }: Translator): React.ReactNode {
     const translator = getTranslator(provider);
 
+    const showSettings = translator.isAvailable() || isAIProvider(translator);
+
     return (
       <div className={styles.providerSettings}>
-        {translator.isAvailable() && this.providerSettings[provider]}
+        {showSettings && this.providerSettings[provider]}
       </div>
     )
   }
 
   renderProvider(provider: Translator) {
     const { name, title } = provider;
-    const publicUrl = new URL(provider.publicUrl);
-    const providerUrl = publicUrl.hostname.replace(/^www\./, "") + publicUrl.pathname.replace(/\/$/, "");
+    const isAI = isAIProvider(provider);
+    const publicUrl = isAI ? undefined : new URL(provider.publicUrl);
 
     return (
       <div key={name} className={`${styles.provider} flex gaps align-center`}>
-        <Radio value={name} label={title}/>
-        <a className={styles.providerUrl} href={publicUrl.toString()} title={publicUrl.origin} target="_blank" tabIndex={-1}>
-          {providerUrl}
-        </a>
-        {this.renderProviderSettings(provider)}
+        <Radio value={name} label={title} disabled={!provider.isAvailable()}/>
+        {publicUrl && (
+          <>
+            <a className={styles.providerUrl} href={publicUrl.toString()} title={publicUrl.origin} target="_blank" tabIndex={-1}>
+              {publicUrl.hostname.replace(/^www\./, "") + publicUrl.pathname.replace(/\/$/, "")}
+            </a>
+            {this.renderProviderSettings(provider)}
+          </>
+        )}
       </div>
     )
   }
@@ -210,6 +272,14 @@ export class Settings extends React.Component {
   }
 
   @action.bound
+  private onAIProviderKeyRemoved = (provider: ProviderCodeName) => {
+    if (settingsStore.data.vendor !== provider) return;
+
+    const fallbackProvider = getTranslators().find(item => !isAIProvider(item) && item.isAvailable());
+    if (fallbackProvider) settingsStore.setProvider(fallbackProvider.name);
+  }
+
+  @action.bound
   private onProviderChange = (provider: ProviderCodeName,) => {
     const prevProvider = settingsStore.data.vendor;
     settingsStore.setProvider(provider);
@@ -222,8 +292,11 @@ export class Settings extends React.Component {
 
   renderPopupTranslationSettings() {
     const settings = settingsStore.data;
-    const providers = getTranslators().filter(provider => provider.isAvailable());
-
+    const allProviders = getTranslators();
+    const providers = allProviders.filter(provider => !isAIProvider(provider) && provider.isAvailable());
+    const advancedProviders = settings.showAdvancedProviders
+      ? getConfiguredAdvancedProviders(allProviders)
+      : [];
     return (
       <>
         <SelectLanguage
@@ -235,6 +308,26 @@ export class Settings extends React.Component {
         />
         <RadioGroup className={styles.providers} value={settings.vendor} onChange={this.onProviderChange}>
           {providers.map(this.renderProvider, this)}
+          <ShowHideMore
+            label={getMessage("settings_advanced_providers")}
+            visible={settings.showAdvancedProviders}
+            onToggle={visible => settings.showAdvancedProviders = visible}
+          >
+            {advancedProviders.map(this.renderProvider, this)}
+            <ShowHideMore
+              className={styles.aiProviderSettings}
+              label={getMessage("settings_configure_ai_providers")}
+              visible={this.aiProviderSettingsVisible}
+              onToggle={visible => this.aiProviderSettingsVisible = visible}
+            >
+              {allProviders.filter(isAIProvider).map(({ name, title }) => (
+                <div key={name} className={styles.aiProviderConfig}>
+                  <strong>{title}</strong>
+                  {this.providerSettings[name]}
+                </div>
+              ))}
+            </ShowHideMore>
+          </ShowHideMore>
         </RadioGroup>
       </>
     );

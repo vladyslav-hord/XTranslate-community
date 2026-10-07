@@ -1,0 +1,18 @@
+.ProviderAuthSettings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--theme-spacing-half);
+
+  a {
+    font-size: small;
+  }
+}
+
+.keyControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--theme-spacing-half);
+  font-size: small;
+}
