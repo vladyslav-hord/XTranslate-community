@@ -1,5 +1,5 @@
 {
-  "name": "xtranslate",
+  "name": "xtranslate-community",
   "version": "5.0.0",
   "scripts": {
     "dev": "npm run webpack -- --env mode=development --watch",
@@ -34,7 +34,8 @@
     "ai-text-to-speech"
   ],
   "author": "ixrock",
-  "repository": "https://github.com/ixrock/XTranslate.git",
+  "contributors": ["Vladyslav Hord"],
+  "repository": "https://github.com/vladyslav-hord/XTranslate-community",
   "license": "MIT",
   "dependencies": {
     "@types/chrome": "^0.1.43",

@@ -1,6 +1,6 @@
 {
   "short_description": {
-    "message": "Easy translate text on web-pages"
+    "message": "Translate selected text, webpages and PDFs with multiple providers and optional AI."
   },
   "description": {
     "message": "Translate texts within page context, customize your own style of popup block, and more."

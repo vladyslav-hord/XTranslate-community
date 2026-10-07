@@ -14,7 +14,6 @@ import { Notifications } from "../notifications";
 import { getUrlParams } from "@/navigation";
 import { pageManager } from "./page-manager";
 import { ExportSettingsDialog } from "./export-settings-dialog";
-import { AppRateDialog } from "./app-rate.dialog";
 import { isRTL } from "@/providers";
 import { getLocale } from "@/i18n";
 import { sendMetric } from "@/background/metrics.bgc";
@@ -62,7 +61,6 @@ export class App extends React.Component {
         <Footer/>
         <Notifications/>
         <ExportSettingsDialog/>
-        <AppRateDialog/>
       </div>
     );
   }

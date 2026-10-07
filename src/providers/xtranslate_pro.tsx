@@ -3,7 +3,7 @@ import { action } from "mobx";
 import LanguagesList from "./bing.json"
 import { getTranslator, ITranslationDictionary, ITranslationError, ITranslationResult, ProviderCodeName, TranslateBatchResult, TranslateClientContext, TranslateMode, TranslateParams, Translator, XTranslateProTTSVoice } from "./index";
 import { MessageType, openProxyStream, ProxyResponseType, ProxyStreamResponsePayload } from "@/extension";
-import { supportEmail, websiteURL } from "@/config";
+import { xtranslateProSupportEmail, xtranslateProWebsiteURL } from "@/config";
 import { sendMetric } from "@/background/metrics.bgc";
 import { createStorage } from "@/storage";
 import { getMessage } from "@/i18n";
@@ -30,10 +30,10 @@ export class XTranslatePro extends Translator {
   override name = ProviderCodeName.XTRANSLATE_PRO;
   override title = "XTranslate PRO";
 
-  override publicUrl = websiteURL;
-  override apiUrl = `${websiteURL}/api`;
-  public subscribePageUrl = `${websiteURL}/subscribe`;
-  public loginUrl = `${websiteURL}/api/auth/signin?callbackUrl=/billing`;
+  override publicUrl = xtranslateProWebsiteURL;
+  override apiUrl = `${xtranslateProWebsiteURL}/api`;
+  public subscribePageUrl = `${xtranslateProWebsiteURL}/subscribe`;
+  public loginUrl = `${xtranslateProWebsiteURL}/api/auth/signin?callbackUrl=/billing`;
 
   private ttsPort?: chrome.runtime.Port;
   private static readonly ttsCacheTtlMs = 24 * 60 * 60 * 1000; // 24h
@@ -269,7 +269,7 @@ export class XTranslatePro extends Translator {
         errorMessage = getMessage("pro_quota_exceeded_paid_subscription_error_429", {
           planType: subscription.planType,
           refreshDate: new Date(subscription.periodEnd).toLocaleDateString(),
-          contactSupport: v => <a href={`mailto:${supportEmail}`}>{v}</a>,
+          contactSupport: v => <a href={`mailto:${xtranslateProSupportEmail}`}>{v}</a>,
         });
       }
     }
