@@ -17,13 +17,11 @@ import { ExportSettingsDialog } from "./export-settings-dialog";
 import { isRTL } from "@/providers";
 import { getLocale } from "@/i18n";
 import { sendMetric } from "@/background/metrics.bgc";
-import { userSubscriptionRefreshAction } from "@/background/user.bgc";
 
 @observer
 export class App extends React.Component {
   static async init() {
-    await preloadAppData(); // preload dependent data before initial app rendering
-    void userSubscriptionRefreshAction({ force: true }); // always get latest user-subscription info
+    await preloadAppData();
 
     const { name: appName, description: appDescription } = getManifest();
     document.title = `${appName} - ${appDescription}`;

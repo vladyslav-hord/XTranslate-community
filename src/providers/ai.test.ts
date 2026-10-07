@@ -52,14 +52,15 @@ describe("translateWithAI", () => {
       model: "gpt-6-luna",
       response_format: { type: "json_object" },
     });
+    expect(body.messages[0].content).toContain("Return detectedLang as an ISO 639-1 language code");
+    expect(body.messages[0].content).toContain('e.g. "en", "pl", "uk"');
     expect(body.messages[1]).toEqual({ role: "user", content: params.text });
-    expect(body.messages[0].content).toContain("automatically");
   });
 
   it.each([
     [ProviderCodeName.OPENAI, OpenAIModel.COST_EFFECTIVE, "none"],
     [ProviderCodeName.OPENAI, OpenAIModel.RECOMMENDED, "low"],
-    [ProviderCodeName.GEMINI, GeminiAIModel.COST_EFFECTIVE, "low"],
+    [ProviderCodeName.GEMINI, GeminiAIModel.COST_EFFECTIVE, undefined],
     [ProviderCodeName.GEMINI, GeminiAIModel.RECOMMENDED, "low"],
     [ProviderCodeName.GROK, GrokAIModel.COST_EFFECTIVE, undefined],
     [ProviderCodeName.GROK, GrokAIModel.RECOMMENDED, "low"],

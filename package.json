@@ -1,6 +1,6 @@
 {
   "name": "xtranslate-community",
-  "version": "5.0.0",
+  "version": "5.18.0-community.1",
   "scripts": {
     "dev": "npm run webpack -- --env mode=development --watch",
     "build": "npm run clean && npm run webpack -- --env mode=production --progress && npm run pdfjs-build",

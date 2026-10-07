@@ -72,7 +72,6 @@ export class Header extends React.Component {
         <header className="flex gaps align-center">
           <div className="app-title">
             {name} <sup className="app-version">{version}</sup>
-            <span className="app-community">community</span>
           </div>
           <div className="box grow flex center">
             <ProUserInfo/>

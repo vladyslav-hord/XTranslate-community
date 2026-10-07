@@ -10,20 +10,17 @@ import { toCssColor } from "@/utils/toCssColor";
 import { TranslatePayload } from "@/extension";
 import { getAllLanguages, getTranslator, getTranslators, isRTL, ITranslationError, ITranslationResult, LangFrom, LangTo, ProviderCodeName } from "@/providers";
 import { Icon } from "../icon";
-import { userStore } from "@/pro";
 import { settingsStore } from "../settings/settings.storage";
 import { themeStore } from "../theme-manager/theme.storage";
 import { isFavorite } from "../user-history/favorites.storage";
 import { getLocale, getMessage } from "@/i18n";
 import { saveToFavoritesAction } from "@/background/history.bgc";
 import { CopyToClipboardIcon } from "../copy-to-clipboard-icon";
-import { PopupPromoBanner } from "@/components/popup/popup_promo";
 import { Tooltip } from "@/components/tooltip";
 import { getLanguageName } from "../../utils/languageName";
 
 export interface PopupProps extends React.HTMLProps<any> {
   previewMode?: boolean;
-  showPromoBanner?: boolean;
   lastParams: TranslatePayload | undefined;
   translation: ITranslationResult | undefined;
   error: Partial<ITranslationError> | undefined;
@@ -344,7 +341,7 @@ export class Popup extends React.Component<PopupProps> {
 
   render() {
     const { popupPosition } = this.settings;
-    const { previewMode, error, className, style: customStyle, showPromoBanner } = this.props;
+    const { previewMode, error, className, style: customStyle } = this.props;
     const hasAutoPosition = popupPosition === "";
     const popupClass = cssNames(styles.Popup, className, popupPosition, {
       [styles.visible]: this.isVisible,
@@ -352,8 +349,7 @@ export class Popup extends React.Component<PopupProps> {
       [styles.previewMode]: previewMode,
     });
 
-    const promoBanner = showPromoBanner && userStore.isPromoVisible ? <PopupPromoBanner/> : null;
-    const mainContent = promoBanner ?? this.renderResult() ?? this.renderSummarized();
+    const mainContent = this.renderResult() ?? this.renderSummarized();
 
     return (
       <div

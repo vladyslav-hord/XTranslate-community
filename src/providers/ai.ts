@@ -36,7 +36,6 @@ const reasoningEffortByProviderAndModel: Partial<Record<ProviderCodeName, Readon
     [OpenAIModel.RECOMMENDED]: "low",
   },
   [ProviderCodeName.GEMINI]: {
-    [GeminiAIModel.COST_EFFECTIVE]: "low",
     [GeminiAIModel.RECOMMENDED]: "low",
   },
   [ProviderCodeName.GROK]: {
@@ -68,6 +67,7 @@ function buildSystemPrompt(sourceLanguage: string | undefined, targetLanguage: s
     source,
     "Preserve meaning, tone, punctuation, and line breaks. Do not add explanations or surrounding text.",
     'Return one JSON object with a string "translation" and the detected source language in "detectedLang".',
+    'Return detectedLang as an ISO 639-1 language code (e.g. "en", "pl", "uk"); use a regional language code only when necessary.',
   ].join(" ");
 }
 

@@ -43,7 +43,6 @@ export class ContentScript extends React.Component {
       this.preloadCss(),
       popupSkipInjectionUrls.load(),
       pageTranslationStorage.load(),
-      userSubscriptionRefreshAction(),
     );
 
     // skip content-script injection for specific urls to avoid bugs, e.g. for cloudflare captcha iframe checks
@@ -758,7 +757,7 @@ export class ContentScript extends React.Component {
   }
 
   render() {
-    const { translation, error, popupPosition, speak, summarized, summarize, isPopupHidden } = this;
+    const { translation, error, popupPosition, speak, summarized, summarize } = this;
 
     return (
       <>
@@ -774,7 +773,6 @@ export class ContentScript extends React.Component {
           onProviderChange={this.translateWith}
           summarize={summarize}
           summarized={summarized}
-          showPromoBanner={!isPopupHidden}
           ref={(ref: Popup) => {
             this.popup = ref
           }}
