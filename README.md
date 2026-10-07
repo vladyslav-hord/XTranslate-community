@@ -1,108 +1,80 @@
-XTranslate
-==========
-Chrome-based browser extension for translating languages.
-Translate single words with dictionary support (Google/Bing) or even full-pages from 100+ foreign languages to your native language.
+# XTranslate Community
 
-![Screenshot](https://github.com/ixrock/XTranslate/blob/master/screenshots/Untitled-1.jpg?raw=true)
-See more screenshots [here](./screenshots/README.md).
+An open-source browser translation extension for selected text, full webpages, PDFs, and multiple translation providers.
 
-Features:
------------
+## Why this project exists
 
-1) Multiple ways to get translation from web-pages:
+XTranslate Community exists to preserve provider choice and useful functionality that was removed from upstream XTranslate. It restores DeepL support and bring-your-own-key (BYOK) AI providers while continuing to track useful upstream improvements where practical.
 
-- full-page text translations: enable/disable auto-translation for full webpage from browser's context-menu or app's action window
-- double-click on the word
-- mouse-over a block of text and press hotkey defined at the extension settings (`Alt + Shift + X` by default), this works for input/textarea fields too!
-- select a text at the webpage and click the XTranslate (X)-icon appeared close to the text
-- just right after text selection _(this option is turned off by default)_
-- click by selected text at the page _(this option is turned off by default)_
-- open the app's action window (extension icon at browser's toolbar) and selected text from the page will be sent for translation
+This is an independently maintained community edition, not an attempt to impersonate or replace the original commercial service.
 
-You can get even some translation from images by mouse overing the image element and
-press hotkey (`title` or `alt` attributes will be used when applicable).
+## What's different
 
-1) Translate texts in **PDF** files _(disabled by default)_.\
-   This option will replace default browser's PDF-viewer and sometimes might not work correctly due [CORS](https://developer.mozilla.org/en-US/docs/Glossary/CORS).\
-   Anyway, even when it's enabled you can re-open PDF document with default viewer by clicking special Chrome-logo icon at PDF's top toolbar.
+- Restored DeepL API support.
+- BYOK OpenAI, Gemini, Grok, and DeepSeek providers.
+- Provider API keys are stored locally by the browser extension.
+- Community usage analytics are disabled; the extension does not send usage events to the original project's Google Analytics property.
+- Community-focused identity and UI.
+- XTranslate PRO remains available only as an external compatibility option.
 
-2) Listen text-to-speech (TTS) for supported translation providers (e.g. `Google`, `OpenAI`)
+## Features
 
-3) Create your unique design (theme) for the popup with translation results
+- Translate selected text by double-click, hotkey, selection icon, or manual input.
+- Translate full webpages where the selected provider supports it.
+- Translate PDF text.
+- Keep translation history and favorites.
+- Text-to-speech for providers that support it.
+- Customize themes and translation behavior.
 
-4) Customize ways of getting translation and other options in app's settings
+## Translation providers
 
-5) Type any text in the app's action window and get translation with dictionary support for single words
+| Provider | Setup | Full-page | Notes |
+| --- | --- | --- | --- |
+| Google | Built in; ready to use | Yes | No key required |
+| Bing | Built in; ready to use | Yes | No key required |
+| DeepL | Your DeepL API key | Yes | Uses the restored batch translation path |
+| OpenAI | Your API key (BYOK) | No | Text translation only for now |
+| Gemini | Your API key (BYOK) | No | Text translation only for now |
+| Grok | Your API key (BYOK) | No | Text translation only for now |
+| DeepSeek | Your API key (BYOK) | No | Text translation only for now |
+| XTranslate PRO | External paid service | Service-dependent | Compatibility integration; operated by the original XTranslate project |
 
-6) Save your favorite language pairs (from -> to) as bookmarks for quick access
-   (`Cmd/Alt + Shift + click` at the language list item to save and keep on top)
+## Installation
 
-7) History of translations (turned off by default)
+There is no XTranslate Community store listing yet. To try the extension locally:
 
-Install extension:
------------
+1. Install [Node.js 24 or later](https://nodejs.org/).
+2. Run `npm ci`.
+3. Run `npm run build`.
+4. In your browser's extension management page, enable developer mode and load the generated extension from `dist` as an unpacked extension.
 
-* [Chrome's Web Store](https://chrome.google.com/webstore/detail/xtranslate/gfgpkepllngchpmcippidfhmbhlljhoo)
-* [Firefox addons](https://addons.mozilla.org/en-GB/firefox/addon/xtranslate-chrome/)
+Packaged community builds may be distributed through GitHub Releases in the future; no release is available yet.
 
-Available translation providers:
------------
+## API keys and privacy
 
-* [Google Translate](http://translate.google.com/) - ready to use after installation.
-* [Bing Translate](http://bing.com/translator/) - ready to use after installation.
-* [XTranslate PRO](https://www.xtranslate.dev/subscribe) - _AI-based professional translator / paid subscription.
+DeepL, OpenAI, Gemini, Grok, and DeepSeek require your own provider API key. These keys are stored in `chrome.storage.local`, not browser sync storage, and the extension does not intentionally log API keys. Translation requests are sent to the selected provider's API through the extension's background HTTP proxy. The selected provider receives the text you ask it to translate and handles it according to its own policies.
 
-How to enable translator in local HTML/PDF files:
------------
-In order to work with local documents (e.g. `file://path/file.pdf`) you must allow access for the extension:
+XTranslate Community does not send usage analytics to the original project's Google Analytics property. This describes the Community extension's own analytics behavior; it does not change the data handling policies of external providers or XTranslate PRO.
 
-- open extensions page `chrome://extensions/`, find **XTranslate** and click _[Details]_ button
-- enable checkbox **"Allow access to file URLs"**
+## XTranslate PRO
 
-XTranslate architecture overview:
------------
+XTranslate PRO is an external commercial service operated by the original XTranslate project. XTranslate Community does not operate the service, manage subscriptions, or control its availability. Selecting it can communicate with `xtranslate.dev`; the upstream project can change or discontinue compatibility independently.
 
-* All parts are connected through the Service Worker.
-* Isomorphic storage updated sequentially in Service Worker only: _say bye-bye to race-conditions_!
-* Webpack build handles 3 different targets: `WebPageContentScript(target=web)`, `AppActionWindowScript(target=web)` and `BackgroundServiceWorker(target=worker)`.
+## Development
 
-```
-┌─────── Web Page (Browser Tab) ────────────┐
-│ Content Script                            │
-│ — captures text selection                 │
-│ — shows floating UI bubble (updates DOM)  │
-└────────▲──────────────────────────────────┘
-         │ messages channel / sync store
-         ▼
-┌─ Service Worker (aka Background Script) ──┐
-│ — access to allowed chrome.api.*          │
-│ — runtime messages hub                    │
-│ — isomorphic storage (use in any env)     │
-│ — api proxy (HTTP(S)/CSP/providers API)   │
-│ — user metrics (GA)                       │
-└────────▲──────────────────────────────────┘
-         │ messages channgel / sync store
-         ▼
-┌─────────────── Action Window ─────────────┐
-│ — settings page                           │
-│ — popup theming and customization page    │
-│ — text input                              │
-│ — history page                            │
-└───────────────────────────────────────────┘
+The project uses TypeScript, React, MobX, and Webpack.
+
+```sh
+npm ci
+npm run dev
+npm test
+npm run build
 ```
 
-How to build/contribute to project:
------------
+## Upstream and license
 
-_Prerequisites:_
+This codebase is based on **XTranslate** by **ixrock** ([ixrock/XTranslate](https://github.com/ixrock/XTranslate)). The repository history is retained for attribution. The upstream package metadata declares the MIT License; XTranslate Community modifications are also distributed under MIT. See [LICENSE](LICENSE) for the license text. Copyright attribution for the Community modifications is limited to the work identified there; no historical upstream copyright notice is asserted.
 
-1) Install [Node.js](https://nodejs.org/) _(v24+)_
-2) Install project dependencies `npm install`
+XTranslate Community is independently maintained by [Vladyslav Hord](https://github.com/vladyslav-hord) and is not affiliated with or endorsed by the original XTranslate project, DeepL, OpenAI, Google, xAI, or DeepSeek. Product and company names are used only to identify compatible services.
 
-_NPM-script commands:_
-
-1) `npm run dev` - run project in development / watch mode
-2) `npm run build` - compile and pack ready to use extension in `/dist`
-3) `npm run test` - run available unit-tests
-
-Powered by Typescript, ReactJS, MobX, Webpack, Scss, and some others. Made with ♥
+Screenshots: [screenshots/Untitled-1.jpg](screenshots/Untitled-1.jpg).
