@@ -25,7 +25,8 @@ import { Tooltip } from "@/components/tooltip";
 import { Popup } from "../components/popup";
 import { Icon } from "@/components/icon";
 import { getMessage } from "@/i18n";
-import { userSubscriptionRefreshAction } from "@/background/user.bgc";
+import { userSubscriptionRefreshAction, ensureProSubscription } from "@/background/user.bgc";
+import { ensureProviderAccess } from "./provider-access";
 import { userStore } from "@/pro";
 
 type DOMRectNormalized = Omit<Writeable<DOMRect>, "toJSON" | "x" | "y">;
@@ -43,7 +44,6 @@ export class ContentScript extends React.Component {
       this.preloadCss(),
       popupSkipInjectionUrls.load(),
       pageTranslationStorage.load(),
-      userSubscriptionRefreshAction(),
     );
 
     // skip content-script injection for specific urls to avoid bugs, e.g. for cloudflare captcha iframe checks
@@ -110,7 +110,6 @@ export class ContentScript extends React.Component {
   @observable isRtlSelection = false;
   @observable isIconVisible = false;
   @observable isLoading = false;
-  @observable isFreeTrialUsed = false;
 
   async componentDidMount() {
     this.bindEvents();
@@ -270,6 +269,7 @@ export class ContentScript extends React.Component {
 
   async translateWith(provider: ProviderCodeName) {
     if (!this.lastParams) return;
+    if (!(await ensureProviderAccess(provider))) return;
 
     await this.translate({ ...this.lastParams, provider });
 
@@ -411,7 +411,6 @@ export class ContentScript extends React.Component {
     this.error = null;
     this.isLoading = false;
     this.summarized = "";
-    this.isFreeTrialUsed = false;
   }
 
   static isEditableElement(elem: Element) {
@@ -740,6 +739,7 @@ export class ContentScript extends React.Component {
   @action
   async summarize(evt: React.MouseEvent) {
     evt.stopPropagation();
+    if (!(await ensureProSubscription())) return;
 
     if (!this.lastParams) {
       this.lastParams = this.getPayloadParams();
@@ -759,16 +759,8 @@ export class ContentScript extends React.Component {
     }
   }
 
-  @action
-  async translateWithFreeTrial() {
-    this.lastParams.provider = ProviderCodeName.XTRANSLATE_PRO;
-    const payload = this.getPayloadParams(this.lastParams);
-    await this.translate(payload, () => getXTranslatePro().translateTrial(payload));
-    this.isFreeTrialUsed = true;
-  }
-
   render() {
-    const { translation, error, popupPosition, speak, summarized, summarize, isPopupHidden } = this;
+    const { translation, error, popupPosition, speak, summarized, summarize } = this;
 
     return (
       <>
@@ -784,9 +776,6 @@ export class ContentScript extends React.Component {
           onProviderChange={this.translateWith}
           summarize={summarize}
           summarized={summarized}
-          showPromoBanner={!isPopupHidden}
-          aiDemoTranslation={this.isFreeTrialUsed}
-          aiDemoTranslationRequest={() => this.translateWithFreeTrial()}
           ref={(ref: Popup) => {
             this.popup = ref
           }}

@@ -4,7 +4,7 @@
 
 import { createLogger } from "@/utils/createLogger";
 import { disposer } from "@/utils/disposer";
-import { StorageAdapter, StorageHelper, StorageHelperOptions } from "@/utils/storageHelper";
+import { StorageAdapter, StorageHelper, StorageHelperOptions, redactStorageLogValue } from "@/utils/storageHelper";
 import { isBackgroundWorker, onMessage } from "@/extension/runtime";
 import { MessageType, StorageSyncPayload } from "@/extension/messages";
 import { listenExternalStorageChanges, readFromExternalStorageAction, removeFromExternalStorageAction, StorageArea, writeToExternalStorageAction } from "@/background/storage.bgc";
@@ -47,7 +47,7 @@ export function createStorage<T>(key: string, options: ChromeStorageHelperOption
   if (isBackgroundWorker()) {
     const stopSyncFromStorageApi = listenExternalStorageChanges(area, (changes) => {
       if (key in changes) {
-        logger.info(`BACKGROUND SYNC "${key}"`, changes[key]);
+        logger.info(`BACKGROUND SYNC "${key}"`, redactStorageLogValue(key, changes[key]));
         storageHelper.sync(changes[key] as T);
       }
     });
@@ -63,7 +63,7 @@ export function createStorage<T>(key: string, options: ChromeStorageHelperOption
     const isOwnSyncEvent = evtResourceId === resourceId;
 
     if (storageKeyMatched && isSameArea && !isOwnSyncEvent) {
-      logger.info(`PAGE SYNC "${key}" at ${msgOrigin}`, payload);
+      logger.info(`PAGE SYNC "${key}" at ${msgOrigin}`, redactStorageLogValue(key, payload));
       storageHelper.sync(state);
     }
   });

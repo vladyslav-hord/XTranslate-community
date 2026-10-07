@@ -2,11 +2,9 @@
 
 export const isDevelopment = process.env.NODE_ENV === "development";
 
-// Extension's public urls for different browsers besides Chrome, e.g. Brave, MS Edge, etc.
-// export const websiteURL = 'http://localhost:3000';
-export const websiteURL = 'https://www.xtranslate.dev';
-export const supportEmail = "team@xtranslate.dev"
-export const chromeStoreURL = 'https://chrome.google.com/webstore/detail/gfgpkepllngchpmcippidfhmbhlljhoo';
+export const communityRepoURL = "https://github.com/vladyslav-hord/XTranslate-community";
+export const xtranslateProWebsiteURL = "https://www.xtranslate.dev";
+export const xtranslateProSupportEmail = "team@xtranslate.dev";
 
 // Webpack: app build, generated output filenames without extension (*.js, *.css)
 export const appEntry = "app";
@@ -27,13 +25,6 @@ export const materialIcons = {
   summarize: "auto_awesome",
   translate: "translate",
 };
-
-//
-// Env-specific data helpers
-//
-export function getExtensionUrl(): string {
-  return chromeStoreURL;
-}
 
 export function isMac(): boolean {
   return !!navigator.userAgent.match(/AppleWebKit|Macintosh/);

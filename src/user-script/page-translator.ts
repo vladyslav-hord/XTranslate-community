@@ -4,6 +4,7 @@ import debounce from "lodash/debounce";
 import { autoBind, createLogger, disposer, LoggerColor, strLengthCodePoints } from "../utils";
 import { getTranslator, getXTranslatePro, ProviderCodeName, XTranslateProTranslateStreamBatchDoneEvent } from "../providers";
 import { createStorage } from "@/storage";
+import { hasTranslatableText } from "./text-translatability";
 
 export type LangSource = string;
 export type LangTarget = string;
@@ -1130,10 +1131,7 @@ export class PageTranslator {
     if (skipByTag) return false;
 
     if (node instanceof Text) {
-      const text = this.getNodeText(node);
-      const empty = !text.length;
-      const hasWords = PageTranslator.RX_LETTER.test(text);
-      return !empty && hasWords;
+      return hasTranslatableText(this.getNodeText(node), PageTranslator.RX_LETTER);
     }
     if (node instanceof HTMLImageElement || node instanceof HTMLAreaElement) {
       return Boolean(this.getNodeImageText(node));

@@ -2,13 +2,11 @@
 
 import { userStore } from "@/pro";
 import { i18nStorage } from "@/i18n";
-import { rateButtonClicked, rateLastTimestamp } from "@/components/app/app-rate.storage";
 import { fullPageTranslateHotkey, popupHotkey, popupSkipInjectionUrls, settingsStorage } from "@/components/settings/settings.storage";
 import { favoritesStorage } from "@/components/user-history/favorites.storage";
 import { customFont, themeStorage } from "@/components/theme-manager/theme.storage";
 import { historyStorage } from "@/components/user-history/history.storage";
 import { pageTranslationStorage } from "@/user-script/page-translator";
-import { freeTrialStorage } from "./providers/xtranslate_pro";
 
 export {
   userStore,
@@ -21,8 +19,5 @@ export {
   popupHotkey,
   popupSkipInjectionUrls,
   fullPageTranslateHotkey,
-  rateButtonClicked,
-  rateLastTimestamp,
   pageTranslationStorage,
-  freeTrialStorage,
 }

@@ -1,7 +1,7 @@
 import "./input-translation.scss";
 import isEqual from "lodash/isEqual";
 import React, { Fragment } from "react";
-import { action, comparer, IReactionDisposer, makeObservable, observable, reaction, toJS } from "mobx";
+import { action, comparer, IReactionDisposer, makeObservable, observable, reaction, runInAction, toJS } from "mobx";
 import { observer } from "mobx-react";
 import { getTranslator, getXTranslatePro, isRTL, ITranslationError, ITranslationResult, ProviderCodeName, Translator } from "@/providers";
 import { cssNames, isHotkeyPressed } from "@/utils";
@@ -23,7 +23,7 @@ import { getSelectedTextAction } from "@/background/selected-text.bgc";
 import { CopyToClipboardIcon } from "../copy-to-clipboard-icon";
 import { SelectProvider } from "../select-provider";
 import { Button } from "@/components/button";
-import { userStore } from "@/pro";
+import { ensureProSubscription } from "@/background/user.bgc";
 import { sendMetric } from "@/background/metrics.bgc";
 
 @observer
@@ -208,7 +208,7 @@ export class InputTranslation extends React.Component {
   }
 
   @action
-  onProviderChange = (provider: ProviderCodeName) => {
+  onProviderChange = async (provider: ProviderCodeName) => {
     const translator = getTranslator(provider);
     const { textInputAutoTranslateEnabled } = settingsStore.data;
 
@@ -217,17 +217,17 @@ export class InputTranslation extends React.Component {
       langTo: this.params.to,
     });
 
-    const prevProvider = this.params.provider;
-    this.params.provider = provider;
-    this.params.from = supportedLanguages.langFrom;
-    this.params.to = supportedLanguages.langTo;
-    this.updateUrl();
-    this.resetSpeakingState();
+    if (provider === ProviderCodeName.XTRANSLATE_PRO && !(await ensureProSubscription())) return;
 
-    if (provider === ProviderCodeName.XTRANSLATE_PRO && !userStore.isProActive) {
-      this.params.provider = prevProvider; // rollback
-      userStore.showSubscribeDialog();
-    } else if (textInputAutoTranslateEnabled) {
+    runInAction(() => {
+      this.params.provider = provider;
+      this.params.from = supportedLanguages.langFrom;
+      this.params.to = supportedLanguages.langTo;
+      this.updateUrl();
+      this.resetSpeakingState();
+    });
+
+    if (textInputAutoTranslateEnabled) {
       void this.translate();
     }
   }
@@ -412,10 +412,7 @@ export class InputTranslation extends React.Component {
 
   @action
   async summarize() {
-    if (!userStore.isProActive) {
-      userStore.showSubscribeDialog();
-      return;
-    }
+    if (!(await ensureProSubscription())) return;
 
     const { provider, to: langTo, text } = this.params;
     if (!text) return;

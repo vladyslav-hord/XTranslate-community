@@ -10,5 +10,4 @@ export * from "../input-translation"
 export * from "../user-history"
 
 // dialogs
-export * from "./app-rate.dialog"
 export * from "./export-settings-dialog"

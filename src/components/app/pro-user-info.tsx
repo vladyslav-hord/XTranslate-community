@@ -4,8 +4,6 @@ import { observer } from "mobx-react";
 import { formatTime, cssNames } from "@/utils";
 import { Icon } from "../icon";
 import { formatNumber, getIntlLocale, getMessage } from "@/i18n";
-import { Tooltip } from "@/components/tooltip";
-import { Button } from "@/components/button";
 import { userStore } from "@/pro";
 
 export const ProUserInfo = observer(ProUserInfoRaw);
@@ -17,8 +15,6 @@ export function ProUserInfoRaw() {
     isProActive,
     remainTextTokens,
     remainSecondsTTSRoughly,
-    pricePerMonth,
-    apiProvider,
     isProExpired,
   } = userStore;
 
@@ -88,19 +84,5 @@ export function ProUserInfoRaw() {
     )
   }
 
-  return (
-    <div className="ProUserInfo flex column inline">
-      <Button
-        outline
-        href={apiProvider.subscribePageUrl}
-        target="_blank" id="subscribe-pro"
-        label={getMessage("pro_upgrade_button_label")}
-      />
-      <Tooltip anchorId="subscribe-pro" following>
-        {getMessage("pro_upgrade_button_tooltip", {
-          pricePerMonth: pricePerMonth,
-        })}
-      </Tooltip>
-    </div>
-  )
+  return null;
 }

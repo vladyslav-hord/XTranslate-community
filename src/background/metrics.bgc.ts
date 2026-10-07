@@ -1,57 +1,17 @@
 import type { PageId } from "../navigation";
 import type { ProviderCodeName } from "../providers";
-import { isDevelopment } from "../config";
-import { createStorage } from "../storage";
 import { createIsomorphicAction, MessageType } from "../extension";
-
-export const GA_MEASUREMENT_ID = "G-HKWWGL29S8";
-export const GA_API_SECRET = "1bWF6YDXSM295O3ONY9esw";
-
-export const gaClientId = createStorage("ga_client_id", {
-  area: "sync",
-  defaultValue: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2),
-  saveDefaultWhenEmpty: true,
-});
 
 export const sendMetric = createIsomorphicAction({
   messageType: MessageType.GA_METRICS_SEND_EVENT,
-  handler: sendGAEvent,
+  handler: disableCommunityMetrics,
 });
 
-export async function sendGAEvent<EventName extends MetricName>(
-  eventName: EventName,
-  params: GoogleMetricEvents[EventName],
-) {
-  if (isDevelopment) {
-    return; // don't pollute metrics from `dev`
-  }
-  try {
-    await gaClientId.load();
-
-    const url = `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`;
-    const payload = {
-      client_id: gaClientId.get(),
-      events: [
-        {
-          name: eventName,
-          params: {
-            platform: "extension",
-            ...params,
-          },
-        },
-      ],
-    };
-
-    return await fetch(url, {
-      method: "POST",
-      body: JSON.stringify(payload),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  } catch (err) {
-    console.warn(`GA event "${eventName}" failed to send: ${err}`, params);
-  }
+export async function disableCommunityMetrics<EventName extends MetricName>(
+  _eventName: EventName,
+  _params: GoogleMetricEvents[EventName],
+): Promise<void> {
+  // Keep existing metric call sites/API intact without collecting or transmitting events.
 }
 
 export type MetricName = keyof GoogleMetricEvents;

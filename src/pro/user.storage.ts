@@ -9,7 +9,6 @@ export interface UserStorage {
   pricing?: XTranslateProPricing;
   ttsVoice?: XTranslateProTTSVoice;
   lastUpdateDateTime?: number; // timestamp of load user-subscription
-  promoBannerShowTime?: number;
 }
 
 export const userStorage = createStorage<UserStorage>("user_pro", {
@@ -20,7 +19,6 @@ export const userStorage = createStorage<UserStorage>("user_pro", {
   defaultValue: {
     ttsVoice: XTranslateProTTSVoice.Alloy,
     lastUpdateDateTime: 0,
-    promoBannerShowTime: 0,
   },
 });
 
@@ -89,17 +87,6 @@ export class UserStore {
     const bytesAvailable = this.subscription?.ttsBytesRemain ?? 0;
 
     return Math.round(bytesAvailable / 16000); // ~mp3/128KBps
-  }
-
-  get isPromoVisible() {
-    if (userStore.isProActive) return false;
-
-    const promoSkippedLastTime = this.data.promoBannerShowTime;
-    const remindPromoDelay = 3 * 30 * 24 * 60 * 60 * 1000; // every 3 months
-
-    return !promoSkippedLastTime || (
-      promoSkippedLastTime + remindPromoDelay <= Date.now()
-    );
   }
 
   get cacheResetRequired(): boolean {

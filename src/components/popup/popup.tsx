@@ -8,23 +8,19 @@ import { materialIcons } from "@/config";
 import { cssNames, prevDefault } from "@/utils";
 import { toCssColor } from "@/utils/toCssColor";
 import { TranslatePayload } from "@/extension";
-import { freeTrialStorage, getAllLanguages, getTranslator, getTranslators, getXTranslatePro, isRTL, ITranslationError, ITranslationResult, LangFrom, LangTo, ProviderCodeName } from "@/providers";
+import { getAllLanguages, getTranslator, getTranslators, isRTL, ITranslationError, ITranslationResult, LangFrom, LangTo, ProviderCodeName } from "@/providers";
 import { Icon } from "../icon";
-import { userStore } from "@/pro";
-import { sendMetric } from "@/background/metrics.bgc";
 import { settingsStore } from "../settings/settings.storage";
 import { themeStore } from "../theme-manager/theme.storage";
 import { isFavorite } from "../user-history/favorites.storage";
 import { getLocale, getMessage } from "@/i18n";
 import { saveToFavoritesAction } from "@/background/history.bgc";
 import { CopyToClipboardIcon } from "../copy-to-clipboard-icon";
-import { PopupPromoBanner } from "@/components/popup/popup_promo";
 import { Tooltip } from "@/components/tooltip";
-import { Button } from "@/components/button";
+import { getLanguageName } from "../../utils/languageName";
 
 export interface PopupProps extends React.HTMLProps<any> {
   previewMode?: boolean;
-  showPromoBanner?: boolean;
   lastParams: TranslatePayload | undefined;
   translation: ITranslationResult | undefined;
   error: Partial<ITranslationError> | undefined;
@@ -32,8 +28,6 @@ export interface PopupProps extends React.HTMLProps<any> {
   onProviderChange?(name: ProviderCodeName): void;
   speak?(): Promise<HTMLAudioElement | SpeechSynthesisUtterance | void>;
   summarize?(evt: React.MouseEvent): Promise<void>;
-  aiDemoTranslation?: boolean;
-  aiDemoTranslationRequest?(evt: React.MouseEvent): void;
 }
 
 @observer
@@ -243,71 +237,11 @@ export class Popup extends React.Component<PopupProps> {
     );
   }
 
-  renderFreeTrialActionsOrUpgradeToProSuggestion() {
-    const { aiDemoTranslation, previewMode, aiDemoTranslationRequest } = this.props;
-    const freeTrial = freeTrialStorage.get();
-    const { finished, showBanner, todayRemain } = freeTrial;
-
-    if (userStore.isProActive || previewMode || !showBanner) {
-      return null;
-    }
-
-    const openLogin = () => {
-      window.open(getXTranslatePro().loginUrl, "_blank");
-      void sendMetric("promo_free_ai_login_clicked", {});
-    };
-
-    const hideBanner = () => {
-      freeTrial.showBanner = false;
-      void sendMetric("promo_free_ai_hide_banner", {});
-    };
-
-    return (
-      <label className={styles.freeTrialDemo}>
-        <input type="checkbox"/>
-        {aiDemoTranslation && (
-          <div>
-            {getMessage("pro_self_improve_with_ai_free_remain_today", {
-              count: todayRemain,
-            })}
-          </div>
-        )}
-        {!finished && !aiDemoTranslation && (
-          <>
-            <span>{getMessage("pro_self_improve_with_ai_suggestion")}</span>
-            <Button
-              outline
-              label={getMessage("pro_self_improve_with_ai_action_label")}
-              onClick={aiDemoTranslationRequest}
-            />
-          </>
-        )}
-        {finished && (
-          <div className={styles.freeTrialExhausted}>
-            <Icon
-              small material="close"
-              className={styles.closeIcon}
-              onClick={prevDefault(hideBanner)}
-            />
-            <span>{getMessage("pro_self_improve_with_ai_free_exausted_total")}</span>
-            <span>
-              {getMessage("pro_self_improve_with_ai_login", {
-                loginLink: v => <Button outline onClick={openLogin}>{v}</Button>
-              })}
-            </span>
-          </div>
-        )}
-        <div className={styles.aiFeatureDetails}>
-          {getMessage("pro_self_ad_features")}
-        </div>
-      </label>
-    );
-  }
-
   renderResult(): React.ReactNode {
     if (!this.translation) return;
     let { translation, transcription, dictionary = [], vendor, langFrom, langTo, langDetected } = this.translation;
     if (langDetected) langFrom = langDetected;
+    const translatedFromLanguage = getLanguageName(langFrom, getAllLanguages());
 
     const translator = getTranslator(vendor);
     const directionResults = isRTL(langTo) ? "rtl" : "ltr";
@@ -351,12 +285,11 @@ export class Popup extends React.Component<PopupProps> {
             </div>
           </div>
         )}
-        {this.renderFreeTrialActionsOrUpgradeToProSuggestion()}
         {
-          this.settings.showTranslatedFrom && (
+          this.settings.showTranslatedFrom && translatedFromLanguage && (
             <div className={styles.translatedFrom}>
               {getMessage("translated_from", {
-                lang: getAllLanguages()[langFrom as LangTo]
+                lang: translatedFromLanguage
               })}
               {` (${translator.title})`}
             </div>
@@ -408,7 +341,7 @@ export class Popup extends React.Component<PopupProps> {
 
   render() {
     const { popupPosition } = this.settings;
-    const { previewMode, error, className, style: customStyle, showPromoBanner } = this.props;
+    const { previewMode, error, className, style: customStyle } = this.props;
     const hasAutoPosition = popupPosition === "";
     const popupClass = cssNames(styles.Popup, className, popupPosition, {
       [styles.visible]: this.isVisible,
@@ -416,8 +349,7 @@ export class Popup extends React.Component<PopupProps> {
       [styles.previewMode]: previewMode,
     });
 
-    const promoBanner = showPromoBanner && userStore.isPromoVisible ? <PopupPromoBanner/> : null;
-    const mainContent = promoBanner ?? this.renderResult() ?? this.renderSummarized();
+    const mainContent = this.renderResult() ?? this.renderSummarized();
 
     return (
       <div

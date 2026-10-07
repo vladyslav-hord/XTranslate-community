@@ -1,7 +1,7 @@
-# XTranslate - screenshots
+# Screenshots
 
-![1](https://github.com/ixrock/XTranslate/blob/master/screenshots/Untitled-1.jpg?raw=true)
-![2](https://github.com/ixrock/XTranslate/blob/master/screenshots/Untitled-2.jpg?raw=true)
-![3](https://github.com/ixrock/XTranslate/blob/master/screenshots/Untitled-3.jpg?raw=true)
-![4](https://github.com/ixrock/XTranslate/blob/master/screenshots/Untitled-4.png?raw=true)
-![5](https://github.com/ixrock/XTranslate/blob/master/screenshots/Untitled-5.png?raw=true)
+![Community extension screenshot](./Untitled-1.jpg)
+![Translation popup](./Untitled-2.jpg)
+![Settings](./Untitled-3.jpg)
+![Full-page translation](./Untitled-4.png)
+![PDF translation](./Untitled-5.png)

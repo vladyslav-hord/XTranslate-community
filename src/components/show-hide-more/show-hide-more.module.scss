@@ -1,7 +1,9 @@
 @use "../mixins" as *;
 
 .ShowHideMore {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   interpolate-size: allow-keywords; /* allow to animate special keyword values, e.g. "width: max-content"*/
 
   > * {
@@ -10,6 +12,10 @@
 
   &:not(.expanded) > :not(.toggle) {
     height: 0;
+    min-height: 0;
+    margin-block: 0;
+    padding-block: 0;
+    border-block-width: 0;
     overflow: clip;
   }
 
