@@ -52,6 +52,7 @@ export class Header extends React.Component {
 
   render() {
     const { name, version } = getManifest();
+    const productName = name.replace(/\s+Community$/i, "");
     const { page: pageId } = getUrlParams();
     const activeTab = activeTabStorage.get();
     const showTranslateIcon = !isSystemPage(activeTab.url);
@@ -71,7 +72,8 @@ export class Header extends React.Component {
       <div className="Header">
         <header className="flex gaps align-center">
           <div className="app-title">
-            {name} <sup className="app-version">{version}</sup>
+            {productName} <sup className="app-version">{version}</sup>
+            <span className="app-community">community</span>
           </div>
           <div className="box grow flex center">
             <ProUserInfo/>

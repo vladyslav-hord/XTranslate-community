@@ -1,6 +1,6 @@
 import * as styles from "./settings.module.scss";
 import React from "react";
-import { action, makeObservable, observable } from "mobx";
+import { action, makeObservable, observable, runInAction } from "mobx";
 import { observer } from "mobx-react";
 import isEqual from "lodash/isEqual";
 import startCase from "lodash/startCase";
@@ -23,6 +23,7 @@ import { SelectProvider } from "../select-provider";
 import { ShowHideMore } from "../show-hide-more";
 import { SettingsUrlList } from "@/components/settings/settings_url_list";
 import { userStore } from "@/pro";
+import { ensureProSubscription } from "@/background/user.bgc";
 import { getHotkey, parseHotkey, prevDefault } from "@/utils";
 import { Input } from "@/components/input";
 import { FullPageContextMenuMode, pageTranslationStorage } from "@/user-script/page-translator";
@@ -249,19 +250,17 @@ export class Settings extends React.Component {
   }
 
   @action.bound
-  onFullPageProviderChange = (provider: ProviderCodeName) => {
-    const fullPageTranslation = pageTranslationStorage.get();
-    const prevProvider = fullPageTranslation.provider;
-    const translator = getTranslator(provider);
-    const supportedLanguages = translator.getSupportedLanguages(fullPageTranslation)
-    fullPageTranslation.provider = provider;
-    fullPageTranslation.langFrom = supportedLanguages.langFrom;
-    fullPageTranslation.langTo = supportedLanguages.langTo;
+  onFullPageProviderChange = async (provider: ProviderCodeName) => {
+    if (provider === ProviderCodeName.XTRANSLATE_PRO && !(await ensureProSubscription())) return;
 
-    if (provider === ProviderCodeName.XTRANSLATE_PRO && !userStore.isProActive) {
-      fullPageTranslation.provider = prevProvider; // rollback
-      userStore.showSubscribeDialog();
-    }
+    const fullPageTranslation = pageTranslationStorage.get();
+    const translator = getTranslator(provider);
+    const supportedLanguages = translator.getSupportedLanguages(fullPageTranslation);
+    runInAction(() => {
+      fullPageTranslation.provider = provider;
+      fullPageTranslation.langFrom = supportedLanguages.langFrom;
+      fullPageTranslation.langTo = supportedLanguages.langTo;
+    });
   };
 
   @action.bound
@@ -280,14 +279,9 @@ export class Settings extends React.Component {
   }
 
   @action.bound
-  private onProviderChange = (provider: ProviderCodeName,) => {
-    const prevProvider = settingsStore.data.vendor;
+  private onProviderChange = async (provider: ProviderCodeName) => {
+    if (provider === ProviderCodeName.XTRANSLATE_PRO && !(await ensureProSubscription())) return;
     settingsStore.setProvider(provider);
-
-    if (provider === ProviderCodeName.XTRANSLATE_PRO && !userStore.isProActive) {
-      settingsStore.setProvider(prevProvider); // rollback
-      userStore.showSubscribeDialog();
-    }
   }
 
   renderPopupTranslationSettings() {

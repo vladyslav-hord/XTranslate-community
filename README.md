@@ -75,6 +75,6 @@ npm run build
 
 This codebase is based on **XTranslate** by **ixrock** ([ixrock/XTranslate](https://github.com/ixrock/XTranslate)). The repository history is retained for attribution. The upstream package metadata declares the MIT License; XTranslate Community modifications are also distributed under MIT. See [LICENSE](LICENSE) for the license text. Copyright attribution for the Community modifications is limited to the work identified there; no historical upstream copyright notice is asserted.
 
-XTranslate Community is independently maintained by [Vladyslav Hord](https://github.com/vladyslav-hord) and is not affiliated with or endorsed by the original XTranslate project, DeepL, OpenAI, Google, xAI, or DeepSeek. Product and company names are used only to identify compatible services.
+XTranslate Community is independently maintained by [Vladyslav Hordiichuk](https://github.com/vladyslav-hord) and is not affiliated with or endorsed by the original XTranslate project, DeepL, OpenAI, Google, xAI, or DeepSeek. Product and company names are used only to identify compatible services.
 
 Screenshots: [screenshots/Untitled-1.jpg](screenshots/Untitled-1.jpg).

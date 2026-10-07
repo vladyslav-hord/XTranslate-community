@@ -7,7 +7,6 @@ import { favoritesStorage } from "@/components/user-history/favorites.storage";
 import { customFont, themeStorage } from "@/components/theme-manager/theme.storage";
 import { historyStorage } from "@/components/user-history/history.storage";
 import { pageTranslationStorage } from "@/user-script/page-translator";
-import { freeTrialStorage } from "./providers/xtranslate_pro";
 
 export {
   userStore,
@@ -21,5 +20,4 @@ export {
   popupSkipInjectionUrls,
   fullPageTranslateHotkey,
   pageTranslationStorage,
-  freeTrialStorage,
 }

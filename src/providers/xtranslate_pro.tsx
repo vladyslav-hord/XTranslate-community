@@ -1,30 +1,14 @@
 import React from "react";
-import { action } from "mobx";
 import LanguagesList from "./bing.json"
 import { getTranslator, ITranslationDictionary, ITranslationError, ITranslationResult, ProviderCodeName, TranslateBatchResult, TranslateClientContext, TranslateMode, TranslateParams, Translator, XTranslateProTTSVoice } from "./index";
 import { MessageType, openProxyStream, ProxyResponseType, ProxyStreamResponsePayload } from "@/extension";
 import { xtranslateProSupportEmail, xtranslateProWebsiteURL } from "@/config";
 import { sendMetric } from "@/background/metrics.bgc";
-import { createStorage } from "@/storage";
 import { getMessage } from "@/i18n";
 import { userStore } from "@/pro";
 import { base64Decode, SSEMessage, SSEParser } from "@/utils";
 
-export const freeTrialStorage = createStorage("xtranslate_pro_trial", {
-  area: "sync",
-  autoLoad: true,
-  saveDefaultWhenEmpty: true,
-  defaultValue: {
-    anonId: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2),
-    todayRemain: 2,
-    totalRemain: 5,
-    finished: false,
-    showBanner: true,
-  },
-});
-
 export class XTranslatePro extends Translator {
-  static ERROR_CODE_LIMIT_REACHED = "LIMIT_REACHED";
   static ERROR_CODE_INPUT_TOO_LARGE_ERROR = "INPUT_TOO_LARGE";
 
   override name = ProviderCodeName.XTRANSLATE_PRO;
@@ -33,7 +17,6 @@ export class XTranslatePro extends Translator {
   override publicUrl = xtranslateProWebsiteURL;
   override apiUrl = `${xtranslateProWebsiteURL}/api`;
   public subscribePageUrl = `${xtranslateProWebsiteURL}/subscribe`;
-  public loginUrl = `${xtranslateProWebsiteURL}/api/auth/signin?callbackUrl=/billing`;
 
   private ttsPort?: chrome.runtime.Port;
   private static readonly ttsCacheTtlMs = 24 * 60 * 60 * 1000; // 24h
@@ -278,27 +261,6 @@ export class XTranslatePro extends Translator {
     throw apiError;
   }
 
-  private handleFreeApiError(err: Error | XTranslateProTranslateError) {
-    const apiError = err as XTranslateProTranslateError;
-
-    if (apiError.error === XTranslatePro.ERROR_CODE_LIMIT_REACHED) {
-      if (apiError.type === "daily") {
-        apiError.message = getMessage("pro_self_improve_with_ai_free_exausted_today", {
-          loginLink: v => <a href={this.loginUrl} target="_blank">{v}</a>,
-        });
-      }
-      if (apiError.type === "total") {
-        freeTrialStorage.merge({
-          totalRemain: 0,
-          finished: true,
-        });
-        apiError.message = getMessage("pro_self_improve_with_ai_free_exausted_total");
-      }
-    }
-
-    throw apiError;
-  }
-
   async translateMany(params: TranslateParams): Promise<string[]> {
     try {
       const { translation } = await this.translateReq(params);
@@ -340,43 +302,6 @@ export class XTranslatePro extends Translator {
       transcription: transcription,
       spellCorrection,
       dictionary,
-    }
-  }
-
-  @action
-  async translateTrial(params: TranslateParams): Promise<ITranslationResult> {
-    const trialStore = freeTrialStorage.get();
-
-    const freeResultPromise = this.request<XTranslateProDemoTrialOutput>({
-      url: `${this.apiUrl}/translate/demo`,
-      requestInit: {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          anon_id: trialStore.anonId,
-          langFrom: params.from,
-          langTo: params.to,
-          text: params.texts ?? [params.text],
-        }),
-      }
-    });
-
-    try {
-      const { limits, result } = await freeResultPromise;
-      const { remaining_today, remaining_total } = limits;
-
-      trialStore.todayRemain = remaining_today;
-      trialStore.totalRemain = remaining_total;
-      trialStore.finished = remaining_total === 0;
-
-      if (!remaining_today) void sendMetric("promo_free_ai_translation_limit_daily", {});
-      if (!remaining_total) void sendMetric("promo_free_ai_translation_limit_total", {});
-
-      return this.toTranslationResult(result, params);
-    } catch (err) {
-      this.handleFreeApiError(err);
-    } finally {
-      void sendMetric("promo_free_ai_translation_used", {});
     }
   }
 
@@ -1008,16 +933,6 @@ export interface XTranslateProTranslateStreamErrorEvent {
   retryable?: boolean;
 }
 
-export interface XTranslateProDemoTrialOutput {
-  result: XTranslateProTranslateOutput;
-  limits: {
-    remaining_today: number;
-    remaining_total: number;
-  };
-}
-
-export type XTranslateProDemoTrialLimitType = "daily" | "total";
-
 export interface XTranslateProTranslateOutput {
   detectedLang: string;
   translation: string[];
@@ -1029,7 +944,6 @@ export interface XTranslateProTranslateOutput {
 
 export interface XTranslateProTranslateError extends ITranslationError {
   error: string;
-  type?: XTranslateProDemoTrialLimitType;
 }
 
 export interface XTranslateProSummarizeInput {

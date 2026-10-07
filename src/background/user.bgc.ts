@@ -1,5 +1,5 @@
 import { createIsomorphicAction, MessageType } from "../extension";
-import { userStore } from "@/pro";
+import { userStore } from "../pro";
 
 export const userSubscriptionRefreshAction = createIsomorphicAction({
   messageType: MessageType.USER_SUBSCRIPTION_REFRESH,
@@ -12,3 +12,11 @@ export const userSubscriptionRefreshAction = createIsomorphicAction({
     }
   }
 });
+
+export async function ensureProSubscription(): Promise<boolean> {
+  await userSubscriptionRefreshAction({ force: true });
+  if (userStore.isProActive) return true;
+
+  userStore.showSubscribeDialog();
+  return false;
+}

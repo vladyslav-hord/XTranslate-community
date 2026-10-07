@@ -12,6 +12,20 @@
       color: white;
     }
 
+    .app-community {
+      position: absolute;
+      top: calc(100% + .25em);
+      right: 0;
+      font-size: .55em;
+      font-weight: 600;
+      letter-spacing: .16em;
+      line-height: 1;
+      opacity: .9;
+      text-align: right;
+      text-transform: lowercase;
+      white-space: nowrap;
+    }
+
     .ProUserInfo {
       color: var(--theme-bgc-invert);
       margin: auto;

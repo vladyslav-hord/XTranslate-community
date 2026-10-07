@@ -25,7 +25,8 @@ import { Tooltip } from "@/components/tooltip";
 import { Popup } from "../components/popup";
 import { Icon } from "@/components/icon";
 import { getMessage } from "@/i18n";
-import { userSubscriptionRefreshAction } from "@/background/user.bgc";
+import { userSubscriptionRefreshAction, ensureProSubscription } from "@/background/user.bgc";
+import { ensureProviderAccess } from "./provider-access";
 import { userStore } from "@/pro";
 
 type DOMRectNormalized = Omit<Writeable<DOMRect>, "toJSON" | "x" | "y">;
@@ -268,6 +269,7 @@ export class ContentScript extends React.Component {
 
   async translateWith(provider: ProviderCodeName) {
     if (!this.lastParams) return;
+    if (!(await ensureProviderAccess(provider))) return;
 
     await this.translate({ ...this.lastParams, provider });
 
@@ -737,6 +739,7 @@ export class ContentScript extends React.Component {
   @action
   async summarize(evt: React.MouseEvent) {
     evt.stopPropagation();
+    if (!(await ensureProSubscription())) return;
 
     if (!this.lastParams) {
       this.lastParams = this.getPayloadParams();
