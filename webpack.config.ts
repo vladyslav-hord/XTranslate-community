@@ -184,6 +184,7 @@ export default [
       new CopyWebpackPlugin({
         patterns: [
           { from: "README.md" },
+          { from: "LICENSE" },
           { from: "manifest.json" },
           { from: "_locales", to: "_locales" },
           { from: "assets", to: "assets" },

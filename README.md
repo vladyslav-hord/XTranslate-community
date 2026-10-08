@@ -41,14 +41,16 @@ This is an independently maintained community edition, not an attempt to imperso
 
 ## Installation
 
-There is no XTranslate Community store listing yet. To try the extension locally:
+Download the packaged build from [GitHub Releases](https://github.com/vladyslav-hord/XTranslate-community/releases/latest), then:
 
-1. Install [Node.js 24 or later](https://nodejs.org/).
-2. Run `npm ci`.
-3. Run `npm run build`.
-4. In your browser's extension management page, enable developer mode and load the generated extension from `dist` as an unpacked extension.
+1. Extract the release ZIP.
+2. Open `chrome://extensions` in your browser.
+3. Enable **Developer mode**.
+4. Click **Load unpacked** and select the extracted folder containing `manifest.json`.
 
-Packaged community builds may be distributed through GitHub Releases in the future; no release is available yet.
+Current support is for Chromium-based desktop browsers, including Chrome, Edge, Brave, Opera, and Vivaldi. Firefox is not currently supported.
+
+To build from source, install [Node.js 24 or later](https://nodejs.org/), run `npm ci`, then `npm run build`; load the generated `dist` folder as an unpacked extension.
 
 ## API keys and privacy
 
