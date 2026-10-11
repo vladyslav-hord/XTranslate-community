@@ -258,12 +258,8 @@ export abstract class Translator {
     ].join(' → ');
   }
 
-  speakSynth(text: string): Promise<SpeechSynthesisUtterance> {
-    try {
-      return speakSystemTTS(text);
-    } catch (err) {
-      this.logger.error(`[TTS]: speech synthesis failed to speak: ${err}`);
-    }
+  speakSynth(text: string, lang?: string): Promise<SpeechSynthesisUtterance> {
+    return speakSystemTTS(text, { lang });
   }
 
   async speak(text: string, lang?: string, ...args: any[]): Promise<HTMLAudioElement | SpeechSynthesisUtterance | void> {
@@ -276,12 +272,12 @@ export abstract class Translator {
     }
 
     if (settingsStore.data.useSpeechSynthesis) {
-      return this.speakSynth(text);
+      return this.speakSynth(text, lang);
     }
 
     try {
       const audioBinary = await this.getAudioBlob(text, lang, ...args);
-      if (!audioBinary) return this.speakSynth(text);
+      if (!audioBinary) return this.speakSynth(text, lang);
 
       this.audio = document.createElement("audio");
       this.audio.src = this.audioDataUrl = URL.createObjectURL(audioBinary);
@@ -300,7 +296,7 @@ export abstract class Translator {
         provider: this.name,
         lang,
       });
-      return this.speakSynth(text); // fallback to TTS-synthesis engine
+      return this.speakSynth(text, lang); // fallback to TTS-synthesis engine
     }
   }
 
