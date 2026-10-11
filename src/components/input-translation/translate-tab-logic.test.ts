@@ -17,10 +17,12 @@ const translation = {
 };
 
 describe("translate tab state helpers", () => {
-  it("accepts only a translation belonging to the current provider, language pair, and input", () => {
+  it("rejects stale results after any provider, language, or input change", () => {
     expect(isTranslationForParams(params, translation)).toBe(true);
-    expect(isTranslationForParams({ ...params, text: "other" }, translation)).toBe(false);
+    expect(isTranslationForParams({ ...params, provider: ProviderCodeName.GOOGLE }, translation)).toBe(false);
+    expect(isTranslationForParams({ ...params, from: "ru" }, translation)).toBe(false);
     expect(isTranslationForParams({ ...params, to: "de" }, translation)).toBe(false);
+    expect(isTranslationForParams({ ...params, text: "other" }, translation)).toBe(false);
   });
 
   it("uses a detected language only for the current auto-detect translation", () => {
