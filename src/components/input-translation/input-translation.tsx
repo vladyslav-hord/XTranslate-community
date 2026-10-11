@@ -38,6 +38,7 @@ import {
 export class InputTranslation extends React.Component {
   private input?: Input;
   private unBindAutoTranslate?: IReactionDisposer;
+  private unBindStaleResults?: IReactionDisposer;
   private lastParams?: TranslationPageParams;
   private translationPromise?: Promise<void>;
   private speakingProvider?: ProviderCodeName;
@@ -76,12 +77,27 @@ export class InputTranslation extends React.Component {
   }
 
   componentDidMount() {
+    this.bindStaleResultCleanup();
     this.bindAutoTranslate();
     void this.checkUserSelectionFromActiveTabAndTranslateIfAny();
   }
 
   componentWillUnmount() {
     this.unBindAutoTranslate?.();
+    this.unBindStaleResults?.();
+  }
+
+  private bindStaleResultCleanup() {
+    this.unBindStaleResults = reaction(() => toJS(this.params), params => {
+      runInAction(() => {
+        if (this.translation && !isTranslationForParams(params, this.translation)) {
+          this.translation = null;
+        }
+        this.summarized = "";
+        this.error = null;
+        this.resetSpeakingState();
+      });
+    }, { equals: comparer.structural });
   }
 
   private async checkUserSelectionFromActiveTabAndTranslateIfAny() {
@@ -472,10 +488,10 @@ export class InputTranslation extends React.Component {
   }
 
   renderTranslation() {
-    const { params, isLoading, translation, error, summarized } = this;
+    const { params, isLoading, error, summarized } = this;
     if (!params.text) return;
     if (isLoading) return <Spinner center/>;
-    if (translation) return this.renderTranslationResult();
+    if (this.currentTranslation) return this.renderTranslationResult();
     if (summarized) return this.renderSummarizeResult();
     if (error) return this.renderTranslationError();
   }
@@ -509,7 +525,8 @@ export class InputTranslation extends React.Component {
     if (!canSummarizeWithProvider(this.params.provider)) return;
     if (!(await ensureProSubscription())) return;
 
-    const { to: langTo, text } = this.params;
+    const params = { ...this.params };
+    const { to: langTo, text } = params;
     if (!text) return;
 
     this.isLoading = true;
@@ -518,12 +535,20 @@ export class InputTranslation extends React.Component {
 
     try {
       this.unBindAutoTranslate?.();
-      this.summarized = await getXTranslatePro().summarize({ text, targetLang: langTo });
+      const summarized = await getXTranslatePro().summarize({ text, targetLang: langTo });
+      if (isEqual(params, this.params)) {
+        this.summarized = summarized;
+      }
     } catch (err) {
-      this.error = err;
+      if (isEqual(params, this.params)) {
+        this.error = err;
+      }
     } finally {
       this.bindAutoTranslate();
       this.isLoading = false;
+      if (settingsStore.data.textInputAutoTranslateEnabled && !isEqual(params, this.params)) {
+        void this.translate();
+      }
     }
   }
 

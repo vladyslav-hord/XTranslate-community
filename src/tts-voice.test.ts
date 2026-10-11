@@ -7,7 +7,18 @@ const voices = [
 ];
 
 describe("system TTS voice selection", () => {
-  it("prefers a voice matching the requested language over the configured index", () => {
+  it("keeps the configured voice when its language matches the request", () => {
+    const voicesWithRegionalVariants = [
+      { name: "French", lang: "fr-FR" },
+      { name: "Russian UK", lang: "ru-GB" },
+      { name: "Russian RU", lang: "ru-RU" },
+    ];
+
+    expect(selectTTSVoice(voicesWithRegionalVariants, "ru-RU", 1)).toBe(voicesWithRegionalVariants[1]);
+    expect(selectTTSVoice(voices, "ru", 1)).toBe(voices[1]);
+  });
+
+  it("selects a requested-language voice when the configured voice is incompatible", () => {
     expect(selectTTSVoice(voices, "ru", 0)).toBe(voices[1]);
     expect(selectTTSVoice(voices, "EN-us", 0)).toBe(voices[2]);
   });
