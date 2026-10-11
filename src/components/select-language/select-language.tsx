@@ -8,12 +8,14 @@ import { getTranslator, ProviderCodeName } from "@/providers";
 import { getMessage } from "@/i18n";
 import { Icon } from "../icon";
 import { FavoriteLangDirection, settingsStore } from "../settings/settings.storage";
+import { getSwappedLanguages } from "../input-translation/translate-tab-logic";
 import { getFlagIcon } from "./flag-icons";
 
 export interface SelectLanguageProps {
   provider: ProviderCodeName;
   from: string;
   to: string;
+  detectedSourceLang?: string;
   className?: string;
   showReverseTranslation?: boolean;
   onChange(update: SelectLanguageChangeEvent): void;
@@ -110,9 +112,10 @@ export class SelectLanguage extends React.Component<SelectLanguageProps> {
 
   @action
   private onSwap = () => {
-    const { from, to } = this.props;
-    if (from === "auto") return; // not possible translate to "auto"
-    this.onChange({ sourceLang: to, targetLang: from });
+    const { from, to, detectedSourceLang } = this.props;
+    const swapped = getSwappedLanguages(from, to, detectedSourceLang);
+    if (!swapped) return;
+    this.onChange({ sourceLang: swapped.langFrom, targetLang: swapped.langTo });
   }
 
   @action
@@ -153,8 +156,9 @@ export class SelectLanguage extends React.Component<SelectLanguageProps> {
   }
 
   render() {
-    const { className, from: langFrom, to: langTo, provider, showReverseTranslation } = this.props;
+    const { className, from: langFrom, to: langTo, provider, detectedSourceLang, showReverseTranslation } = this.props;
     const autoDetectEnabled = langFrom === "auto";
+    const canSwapLanguages = !!getSwappedLanguages(langFrom, langTo, detectedSourceLang);
     const translator = getTranslator(provider);
     const { langTo: targetLangList } = translator;
     const initialReverseLang = langTo !== "en" ? "en" : Object.keys(targetLangList).filter(lang => lang !== "auto")[0] /*first*/;
@@ -182,15 +186,14 @@ export class SelectLanguage extends React.Component<SelectLanguageProps> {
           />
         </div>
 
-        {!autoDetectEnabled && (
-          <Icon
-            material="swap_horiz"
-            className="swap-icon"
-            style={{ alignSelf: "center" }}
-            tooltip={getMessage("swap_languages")}
-            onClick={this.onSwap}
-          />
-        )}
+        <Icon
+          material="swap_horiz"
+          className="swap-icon"
+          style={{ alignSelf: "flex-end" }}
+          tooltip={getMessage("swap_languages")}
+          disabled={!canSwapLanguages}
+          onClick={this.onSwap}
+        />
 
         <div className="flex column box grow">
           <small>{getMessage("target_lang_placeholder")}</small>

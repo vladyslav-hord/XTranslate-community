@@ -25,13 +25,37 @@ import { SelectProvider } from "../select-provider";
 import { Button } from "@/components/button";
 import { ensureProSubscription } from "@/background/user.bgc";
 import { sendMetric } from "@/background/metrics.bgc";
+import {
+  canSummarizeWithProvider,
+  getDetectedSourceLanguage,
+  getTranslateTabSelection,
+  isTranslationForParams,
+  saveTranslateTabPair,
+  TranslateTabPreferences,
+} from "./translate-tab-logic";
 
 @observer
 export class InputTranslation extends React.Component {
   private input?: Input;
   private unBindAutoTranslate?: IReactionDisposer;
   private lastParams?: TranslationPageParams;
+  private translationPromise?: Promise<void>;
+  private speakingProvider?: ProviderCodeName;
   private lastInputText = createStorage<string>("last_input_text");
+  private translateTabPreferences = createStorage<TranslateTabPreferences>("translate_tab_preferences", {
+    defaultValue: {},
+  });
+
+  private get currentTranslation(): ITranslationResult | undefined {
+    return isTranslationForParams(this.params, this.translation) ? this.translation : undefined;
+  }
+
+  private get currentDetectedSourceLang(): string | undefined {
+    const params = this.params;
+    if (!params) return;
+    const detected = getDetectedSourceLanguage(params, this.currentTranslation);
+    return detected && getTranslator(params.provider)?.langFrom[detected] ? detected : undefined;
+  }
 
   get urlParams(): TranslationPageParams {
     const { provider, text, to, from } = getUrlParams<TranslationPageParams>();
@@ -62,13 +86,22 @@ export class InputTranslation extends React.Component {
 
   private async checkUserSelectionFromActiveTabAndTranslateIfAny() {
     const { rememberLastText, vendor, langFrom, langTo, textInputAutoTranslateEnabled } = settingsStore.data;
+    await this.translateTabPreferences.load();
+    const selection = getTranslateTabSelection(
+      { provider: vendor, from: langFrom, to: langTo },
+      this.translateTabPreferences.get(),
+      this.urlParams,
+      (provider, from, to) => {
+        const supported = getTranslator(provider).getSupportedLanguages({ langFrom: from, langTo: to });
+        return { from: supported.langFrom, to: supported.langTo };
+      },
+    );
     this.params = {
       page: "translate",
-      provider: this.urlParams.provider ?? vendor,
-      from: this.urlParams.from ?? langFrom,
-      to: this.urlParams.to ?? langTo,
+      ...selection,
       text: this.urlParams.text ?? "",
     };
+    this.saveTranslateTabSelection(selection.provider, selection.from, selection.to);
 
     await this.lastInputText.load();
     const selectedText = await getSelectedTextAction();
@@ -98,43 +131,88 @@ export class InputTranslation extends React.Component {
   resetSpeakingState() {
     this.isSpeaking = false;
     this.isPaused = false;
+    this.speakingProvider = undefined;
   }
 
   @action.bound
   speak = async () => {
-    let { provider, text, from } = this.params;
+    if (this.isSpeaking) return this.toggleSpeaking();
 
-    if (from === "auto" && provider === ProviderCodeName.GOOGLE) {
-      await this.translate(); // google-tts api requires `lang` param to be defined
-      const { vendor, langDetected, originalText } = this.translation;
-      provider = vendor;
-      from = langDetected;
-      text = originalText;
+    const params = { ...this.params };
+    if (!params.text) return;
+
+    let translation = this.currentTranslation;
+    if (params.from === "auto" && !translation) {
+      await this.translate({ ...params });
+      translation = this.currentTranslation;
     }
+    if (!isEqual(params, this.params)) return;
 
+    const lang = params.from === "auto"
+      ? getDetectedSourceLanguage(params, translation)
+      : params.from;
+    if (!lang || !getTranslator(params.provider)?.langFrom[lang]) return;
+
+    return this.speakText(params.text, lang, params.provider);
+  };
+
+  @action.bound
+  speakTranslation = async () => {
+    if (this.isSpeaking) return this.toggleSpeaking();
+
+    const translation = this.currentTranslation;
+    if (!translation?.translation) return;
+
+    return this.speakText(
+      translation.translation,
+      translation.langTo || this.params.to,
+      translation.vendor || this.params.provider,
+    );
+  };
+
+  @action.bound
+  private async toggleSpeaking() {
+    const translator = getTranslator(this.speakingProvider ?? this.params?.provider);
+    if (!translator) return this.resetSpeakingState();
+
+    this.isPaused = !this.isPaused;
+    try {
+      await translator.pauseSpeaking();
+    } catch (error) {
+      console.error("Text-to-speech pause/resume failed", error);
+      this.resetSpeakingState();
+    }
+  }
+
+  @action.bound
+  private async speakText(text: string, lang: string, provider: ProviderCodeName) {
     const translator = getTranslator(provider);
-
-    if (this.isSpeaking) {
-      this.isPaused = !this.isPaused;
-      return translator.pauseSpeaking();
-    }
+    if (!translator) return;
 
     try {
       this.isSpeaking = true;
       this.isPaused = false;
+      this.speakingProvider = provider;
 
-      const media = await translator.speak(text, from);
-
+      const media = await translator.speak(text, lang);
       if (media instanceof HTMLAudioElement) {
         media.onended = this.resetSpeakingState;
+        media.onerror = () => {
+          console.error("Text-to-speech audio playback failed", media.error);
+          this.resetSpeakingState();
+        };
+        if (media.ended) this.resetSpeakingState();
       } else if (media instanceof SpeechSynthesisUtterance) {
         media.onend = this.resetSpeakingState;
+        media.onerror = event => {
+          console.error("Text-to-speech synthesis failed", event.error);
+          this.resetSpeakingState();
+        };
+      } else {
+        this.resetSpeakingState();
       }
-
-      if (!media) {
-        this.isSpeaking = false;
-      }
-    } catch (err) {
+    } catch (error) {
+      console.error("Text-to-speech failed", error);
       this.resetSpeakingState();
     }
   }
@@ -149,8 +227,13 @@ export class InputTranslation extends React.Component {
   async translate(params = { ...this.params }) {
     this.summarized = "";
 
-    if (!params.text || isEqual(this.lastParams, params)) {
-      return;
+    if (!params.text) return;
+    if (isEqual(this.lastParams, params)) {
+      if (this.isLoading && this.translationPromise) {
+        await this.translationPromise;
+        return;
+      }
+      if (isTranslationForParams(params, this.translation)) return;
     }
 
     this.input?.focus(); // autofocus input-field
@@ -158,40 +241,49 @@ export class InputTranslation extends React.Component {
     this.translation = null;
     this.error = null;
     this.isLoading = true;
+    this.lastParams = params;
 
-    try {
-      this.lastParams = params;
-      const translation = await getTranslator(params.provider).translate({
-        from: params.from,
-        to: params.to,
-        text: params.text.trim(),
-        mode: "lookup",
-      });
-      if (isEqual(params, this.params)) {
-        this.translation = translation;
-        void sendMetric("translate_used", {
-          source: "translate_tab",
-          provider: params.provider,
-          lang_from: params.from,
-          lang_to: params.to,
+    this.translationPromise = (async () => {
+      try {
+        const translation = await getTranslator(params.provider).translate({
+          from: params.from,
+          to: params.to,
+          text: params.text.trim(),
+          mode: "lookup",
         });
+        if (isEqual(params, this.params)) {
+          this.translation = translation;
+          void sendMetric("translate_used", {
+            source: "translate_tab",
+            provider: params.provider,
+            lang_from: params.from,
+            lang_to: params.to,
+          });
+        }
+      } catch (error) {
+        if (isEqual(params, this.params)) {
+          this.error = error;
+          void sendMetric("translate_error", {
+            error: String(this.error?.message ?? error),
+            source: "translate_tab",
+            provider: params.provider,
+            lang_from: params.from,
+            lang_to: params.to,
+          });
+        }
+      } finally {
+        this.isLoading = false;
+        this.updateUrl(params);
       }
-    } catch (error) {
-      if (isEqual(params, this.params)) {
-        this.error = error;
-        void sendMetric("translate_error", {
-          error: String(this.error?.message ?? error),
-          source: "translate_tab",
-          provider: params.provider,
-          lang_from: params.from,
-          lang_to: params.to,
-        });
-      }
-    } finally {
-      this.isLoading = false;
-      this.updateUrl(params);
-    }
-  };
+    })();
+    await this.translationPromise;
+  }
+
+  private saveTranslateTabSelection(provider: ProviderCodeName, from: string, to: string) {
+    this.translateTabPreferences.set(
+      saveTranslateTabPair(this.translateTabPreferences.get(), provider, from, to),
+    );
+  }
 
   private updateUrl(newParams = this.params) {
     if (!isEqual(this.urlParams, newParams)) {
@@ -203,26 +295,28 @@ export class InputTranslation extends React.Component {
   onLangChange = (from: string, to: string) => {
     this.params.from = from;
     this.params.to = to;
+    this.saveTranslateTabSelection(this.params.provider, from, to);
     this.updateUrl();
     this.resetSpeakingState();
   }
 
   @action
   onProviderChange = async (provider: ProviderCodeName) => {
+    if (provider === ProviderCodeName.XTRANSLATE_PRO && !(await ensureProSubscription())) return;
+
     const translator = getTranslator(provider);
     const { textInputAutoTranslateEnabled } = settingsStore.data;
-
+    const savedPair = this.translateTabPreferences.get().languages?.[provider];
     const supportedLanguages = translator.getSupportedLanguages({
-      langFrom: this.params.from,
-      langTo: this.params.to,
+      langFrom: savedPair?.from ?? this.params.from,
+      langTo: savedPair?.to ?? this.params.to,
     });
-
-    if (provider === ProviderCodeName.XTRANSLATE_PRO && !(await ensureProSubscription())) return;
 
     runInAction(() => {
       this.params.provider = provider;
       this.params.from = supportedLanguages.langFrom;
       this.params.to = supportedLanguages.langTo;
+      this.saveTranslateTabSelection(provider, supportedLanguages.langFrom, supportedLanguages.langTo);
       this.updateUrl();
       this.resetSpeakingState();
     });
@@ -254,7 +348,7 @@ export class InputTranslation extends React.Component {
               <Icon
                 material={this.isPaused ? materialIcons.ttsPause : materialIcons.ttsPlay}
                 tooltip={getMessage("popup_play_icon_title")}
-                onClick={this.speak}
+                onClick={this.speakTranslation}
               />
               <CopyToClipboardIcon
                 content={this.translation}
@@ -412,14 +506,11 @@ export class InputTranslation extends React.Component {
 
   @action
   async summarize() {
+    if (!canSummarizeWithProvider(this.params.provider)) return;
     if (!(await ensureProSubscription())) return;
 
-    const { provider, to: langTo, text } = this.params;
+    const { to: langTo, text } = this.params;
     if (!text) return;
-
-    if (provider !== ProviderCodeName.XTRANSLATE_PRO) {
-      this.params.provider = ProviderCodeName.XTRANSLATE_PRO;
-    }
 
     this.isLoading = true;
     this.error = null;
@@ -463,6 +554,7 @@ export class InputTranslation extends React.Component {
             provider={provider}
             from={langFrom}
             to={langTo}
+            detectedSourceLang={this.currentDetectedSourceLang}
             onChange={({ langTo, langFrom }) => this.onLangChange(langFrom, langTo)}
           />
           <SelectProvider
@@ -522,13 +614,15 @@ export class InputTranslation extends React.Component {
             <Icon svg="tts"/>
             <span>{getMessage("tts_button")}</span>
           </Button>
-          <Button
-            className="flex gaps align-center"
-            onClick={() => this.summarize()}
-          >
-            <Icon material={materialIcons.summarize}/>
-            <span>{getMessage("summarize_button")}</span>
-          </Button>
+          {canSummarizeWithProvider(provider) && (
+            <Button
+              className="flex gaps align-center"
+              onClick={() => this.summarize()}
+            >
+              <Icon material={materialIcons.summarize}/>
+              <span>{getMessage("summarize_button")}</span>
+            </Button>
+          )}
         </div>
       </div>
     );
