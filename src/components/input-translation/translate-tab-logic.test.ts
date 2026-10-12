@@ -1,3 +1,4 @@
+import deeplLanguages from "../../providers/deepl.json";
 import { ProviderCodeName } from "../../providers/providers";
 import {
   canSummarizeWithProvider,
@@ -31,11 +32,25 @@ describe("translate tab state helpers", () => {
     expect(getDetectedSourceLanguage({ ...params, from: "pl" }, translation)).toBeUndefined();
   });
 
-  it("swaps explicit pairs and uses a current detected source for auto-detect", () => {
-    expect(getSwappedLanguages("pl", "en")).toEqual({ langFrom: "en", langTo: "pl" });
-    expect(getSwappedLanguages("auto", "en", "ru")).toEqual({ langFrom: "en", langTo: "ru" });
-    expect(getSwappedLanguages("auto", "en")).toBeUndefined();
-    expect(getSwappedLanguages("auto", "ru", "ru")).toBeUndefined();
+  it("swaps explicit and auto-detected DeepL languages to valid codes for each side", () => {
+    const cases = [
+      { from: "auto", to: "en-us", detected: "ru", expected: { langFrom: "en", langTo: "ru" } },
+      { from: "ru", to: "en-us", expected: { langFrom: "en", langTo: "ru" } },
+      { from: "en", to: "ru", expected: { langFrom: "ru", langTo: "en" } },
+      { from: "auto", to: "fr-ca", detected: "ru", expected: { langFrom: "fr", langTo: "ru" } },
+    ];
+
+    for (const { from, to, detected, expected } of cases) {
+      const swapped = getSwappedLanguages(from, to, detected, deeplLanguages.from, deeplLanguages.to);
+      expect(swapped).toEqual(expected);
+      expect(Object.keys(deeplLanguages.from)).toContain(swapped!.langFrom);
+      expect(Object.keys(deeplLanguages.to)).toContain(swapped!.langTo);
+    }
+  });
+
+  it("disables auto-detect swaps without a detected source or a supported equivalent", () => {
+    expect(getSwappedLanguages("auto", "en-us", undefined, deeplLanguages.from, deeplLanguages.to)).toBeUndefined();
+    expect(getSwappedLanguages("auto", "unknown", "ru", deeplLanguages.from, deeplLanguages.to)).toBeUndefined();
   });
 
   it("allows summarize only with XTranslate PRO", () => {
