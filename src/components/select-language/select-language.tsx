@@ -112,8 +112,15 @@ export class SelectLanguage extends React.Component<SelectLanguageProps> {
 
   @action
   private onSwap = () => {
-    const { from, to, detectedSourceLang } = this.props;
-    const swapped = getSwappedLanguages(from, to, detectedSourceLang);
+    const { from, to, detectedSourceLang, provider } = this.props;
+    const translator = getTranslator(provider);
+    const swapped = getSwappedLanguages(
+      from,
+      to,
+      detectedSourceLang,
+      translator.langFrom,
+      translator.langTo,
+    );
     if (!swapped) return;
     this.onChange({ sourceLang: swapped.langFrom, targetLang: swapped.langTo });
   }
@@ -158,8 +165,14 @@ export class SelectLanguage extends React.Component<SelectLanguageProps> {
   render() {
     const { className, from: langFrom, to: langTo, provider, detectedSourceLang, showReverseTranslation } = this.props;
     const autoDetectEnabled = langFrom === "auto";
-    const canSwapLanguages = !!getSwappedLanguages(langFrom, langTo, detectedSourceLang);
     const translator = getTranslator(provider);
+    const canSwapLanguages = !!getSwappedLanguages(
+      langFrom,
+      langTo,
+      detectedSourceLang,
+      translator.langFrom,
+      translator.langTo,
+    );
     const { langTo: targetLangList } = translator;
     const initialReverseLang = langTo !== "en" ? "en" : Object.keys(targetLangList).filter(lang => lang !== "auto")[0] /*first*/;
     const reverseLang = settingsStore.data.langToReverse || initialReverseLang;
